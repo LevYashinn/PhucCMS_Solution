@@ -1,0 +1,51 @@
+﻿@model List<CMS.Data.Entities.Customer>
+@{
+    ViewData["Title"] = "Danh sách khách hàng";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="text-dark font-weight-bold m-0 text-uppercase">BÀI TẬP 5: LIỆT KÊ DANH SÁCH CUSTOMERS</h3>
+        <button class="btn btn-info btn-sm text-white">+ Thêm khách hàng mới</button>
+    </div>
+
+    <table class="table table-bordered table-striped table-hover align-middle shadow-sm bg-white">
+        <thead class="table-dark text-white">
+            <tr>
+                <th style="width: 80px;" class="text-center">ID</th>
+                <th>Họ Và Tên</th>
+                <th>Email</th>
+                <th style="width: 160px;">Số Điện Thoại</th>
+                <th>Địa Chỉ</th>
+                <th class="text-center" style="width: 150px;">Thao Tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="text-center font-weight-bold text-secondary">@item.Id</td>
+                        <td class="font-weight-bold text-dark">@item.FullName</td>
+                        <td>@item.Email</td>
+                        <td class="text-primary font-weight-bold">@item.Phone</td>
+                        <td class="text-muted">@item.Address</td>
+                        <td class="text-center">
+                            <button class="btn btn-warning btn-sm py-0 px-2 text-white">Sửa</button>
+                            <button class="btn btn-danger btn-sm py-0 px-2">Xóa</button>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-3">
+                        Chưa có dữ liệu khách hàng nào.
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

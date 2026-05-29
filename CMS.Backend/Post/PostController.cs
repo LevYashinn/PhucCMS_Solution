@@ -18,31 +18,46 @@ namespace CMS.Backend.Controllers
         }
 
         // Hiển thị danh sách bài viết từ SQL Server
-        public IActionResult Index()
+        // Tham số 'id' được truyền vào từ URL (ví dụ: /Post/Index/5)
+        public IActionResult Index(int? id)
         {
-            // Lấy dữ liệu thật từ bảng Posts
-            var posts = _context.Posts
-                                .Include(p => p.Category)
-                                .ToList();
+            // Tạo truy vấn ban đầu lấy kèm bảng Category
+            var query = _context.Posts.Include(p => p.Category).AsQueryable();
 
+            // 1. Nếu người dùng CÓ truyền id -> lọc theo Danh mục
+            if (id != null)
+            {
+                query = query.Where(p => p.CategoryId == id);
+            }
+            // Ngược lại nếu id == null -> Bỏ qua không lọc, hệ thống tự lấy hết bài viết
+
+            // 2. Sắp xếp theo ngày mới nhất và chuyển thành List
+            var posts = query.OrderByDescending(p => p.CreatedDate).ToList();
+
+            // 3. Truyền dữ liệu ra View
             return View(posts);
         }
 
-        // Chi tiết bài viết
+
+        // GET: Post/Details/5
         public IActionResult Details(int id)
         {
-            // Tìm bài viết theo Id
+            // 1. Truy vấn bài viết theo ID
+            // Sử dụng .Include(p => p.Category) để lấy kèm thông tin Danh mục (Join bảng)
             var post = _context.Posts
-                               .Include(p => p.Category)
-                               .FirstOrDefault(p => p.Id == id);
+                .Include(p => p.Category)
+                .FirstOrDefault(p => p.Id == id);
 
-            // Nếu không tồn tại
+            // 2. Kiểm tra nếu không tìm thấy bài viết (tránh lỗi màn hình trắng)
             if (post == null)
             {
-                return NotFound();
+                return NotFound(); // Trả về trang lỗi 404
             }
 
+            // 3. Truyền dữ liệu sang View
             return View(post);
         }
+
+
     }
 }
