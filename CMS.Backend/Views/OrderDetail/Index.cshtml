@@ -1,0 +1,56 @@
+﻿@model List<CMS.Data.Entities.OrderDetail>
+@{
+    ViewData["Title"] = "Chi tiết đơn hàng";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="text-dark font-weight-bold m-0 text-uppercase">BÀI TẬP 7: LIỆT KÊ DANH SÁCH ORDER DETAILS</h3>
+        <span class="badge bg-secondary p-2">Dữ liệu hệ thống</span>
+    </div>
+
+    <table class="table table-bordered table-striped table-hover align-middle shadow-sm bg-white">
+        <thead class="table-dark text-white">
+            <tr>
+                <th style="width: 80px;" class="text-center">ID</th>
+                <th class="text-center" style="width: 150px;">Mã Đơn Hàng</th>
+                <th class="text-center" style="width: 250px;">Tên Sản Phẩm</th>
+                <th class="text-center" style="width: 120px;">Số Lượng</th>
+                <th class="text-end" style="width: 200px;">Đơn Giá</th>
+                <th class="text-end" style="width: 200px;">Thành Tiền</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var item in Model)
+                {
+                    // Tính toán thành tiền trực tiếp trên giao diện
+                    var totalRow = item.Quantity * item.UnitPrice;
+
+                    <tr>
+                        <td class="text-center font-weight-bold text-secondary">@item.Id</td>
+
+                        <td class="text-center font-weight-bold text-primary">#DH00@(item.OrderId)</td>
+
+                        <td class="text-center font-weight-bold text-success">
+                            @(item.Product?.Name ?? "N/A")
+                        </td>
+
+                        <td class="text-center font-weight-bold">@item.Quantity</td>
+                        <td class="text-end text-muted">@item.UnitPrice.ToString("N0") đ</td>
+                        <td class="text-end text-danger font-weight-bold">@totalRow.ToString("N0") đ</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-3">
+                        Chưa có dữ liệu chi tiết đơn hàng nào. Hãy nạp thêm trong SQL Server!
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,69 @@
+﻿@model List<CMS.Data.Entities.Order>
+@{
+    ViewData["Title"] = "Quản lý đơn hàng";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="text-dark font-weight-bold m-0 text-uppercase">BÀI TẬP 6: LIỆT KÊ DANH SÁCH ORDERS</h3>
+        <button class="btn btn-dark btn-sm">+ Tạo đơn hàng mới</button>
+    </div>
+
+    <table class="table table-bordered table-striped table-hover align-middle shadow-sm bg-white">
+        <thead class="table-dark text-white">
+            <tr>
+                <th style="width: 80px;" class="text-center">ID</th>
+                <th style="width: 200px;" class="text-center">Tên Khách Hàng</th>
+                <th style="width: 200px;">Ngày Đặt Hàng</th>
+                <th style="width: 160px;" class="text-center">Trạng Thái</th>
+                <th>Ghi Chú Đơn Hàng (Notes)</th>
+                <th class="text-center" style="width: 150px;">Thao Tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="text-center font-weight-bold text-secondary">@item.Id</td>
+
+                        <td class="text-center font-weight-bold text-primary">
+                            @(item.Customer?.FullName ?? "N/A")
+                        </td>
+
+                        <td>@item.OrderDate.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="text-center">
+                            @* Kiểm tra trạng thái dựa theo số nguyên hệ thống *@
+                            @if (item.Status == 2)
+                            {
+                                <span class="badge bg-success">Đã giao</span>
+                            }
+                            else if (item.Status == 1)
+                            {
+                                <span class="badge bg-warning text-dark">Đang xử lý</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Đã hủy</span>
+                            }
+                        </td>
+                        <td class="text-muted">@item.Notes</td>
+                        <td class="text-center">
+                            <button class="btn btn-warning btn-sm py-0 px-2 text-white">Sửa</button>
+                            <button class="btn btn-danger btn-sm py-0 px-2">Xóa</button>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-3">
+                        Chưa có dữ liệu đơn hàng nào. Hãy kiểm tra hoặc nạp thêm trong SQL Server!
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
