@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using CMS.Data;
+using Microsoft.EntityFrameworkCore; // BẮT BUỘC THÊM: Để sử dụng được lệnh .Include()
 using System.Linq;
 
 namespace CMS.Backend.Controllers
@@ -16,7 +17,12 @@ namespace CMS.Backend.Controllers
         // Action hiển thị danh sách chi tiết đơn hàng
         public IActionResult Index()
         {
-            var orderDetails = _context.OrderDetails.ToList();
+            // ĐÃ SỬA: Dùng .Include để liên kết (JOIN) sang bảng Product và Order trong SQL Server
+            var orderDetails = _context.OrderDetails
+                                       .Include(od => od.Product) // Nạp kèm dữ liệu sản phẩm để lấy tên sản phẩm
+                                       .OrderByDescending(od => od.Id) // Sắp xếp chi tiết mới lên đầu (tùy chọn)
+                                       .ToList();
+
             return View(orderDetails);
         }
     }

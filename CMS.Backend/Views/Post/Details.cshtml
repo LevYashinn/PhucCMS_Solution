@@ -1,32 +1,200 @@
 ﻿@model CMS.Data.Entities.Post
+@{
+    // Tạm thời tắt Layout chung để kiểm tra CSS Luxury thuần túy
+    Layout = null;
+}
 
-<div class="container mt-5">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/Post">Danh sách bài viết</a></li>
-            <li class="breadcrumb-item active">Chi tiết bài viết</li>
-        </ol>
-    </nav>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@Model.Title - Luxury Magazine</title>
 
-    <div class="row justify-content-center">
-        <div class="col-md-10">
-            <h1 class="display-4 fw-bold text-primary">@Model.Title</h1>
-            <p class="text-muted">Đăng ngày: @Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")</p>
-            <hr />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-            <div class="text-center mb-4">
-                <img src="@Model.ImageUrl" class="img-fluid rounded shadow" alt="Post Image" style="width: 100%;">
-            </div>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
 
-            <div class="post-content fs-5 leading-lg">
-                @Model.Content
-            </div>
+    <style>
+        body {
+            background-color: #fdfdfd;
+        }
+        /* Tổng thể bộ khung Luxury */
+        .luxury-article-wrapper {
+            font-family: 'Inter', sans-serif;
+            color: #334155;
+            padding-top: 60px;
+            padding-bottom: 100px;
+        }
 
-            <div class="mt-5 border-top pt-3">
-                <a href="/Post" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left"></i> Quay lại danh sách
-                </a>
+        /* Hệ thống Breadcrumb thanh lịch */
+        .luxury-breadcrumb .breadcrumb-item,
+        .luxury-breadcrumb .breadcrumb-item a {
+            color: #94a3b8;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+            .luxury-breadcrumb .breadcrumb-item a:hover {
+                color: #0f172a;
+            }
+
+            .luxury-breadcrumb .breadcrumb-item.active {
+                color: #0f172a;
+                font-weight: 600;
+            }
+
+            .luxury-breadcrumb .breadcrumb-item + .breadcrumb-item::before {
+                color: #cbd5e1;
+                content: "•";
+            }
+
+        /* Tiêu đề bài viết phong cách tạp chí */
+        .luxury-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.2rem;
+            line-height: 1.25;
+            color: #0f172a;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        /* Siêu dữ liệu bài viết */
+        .luxury-meta {
+            font-size: 0.9rem;
+            color: #64748b;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 2rem;
+        }
+
+        .luxury-hr {
+            border: 0;
+            height: 1px;
+            background: linear-gradient(to right, #e2e8f0, rgba(226, 232, 240, 0));
+            margin-bottom: 3rem;
+        }
+
+        /* Thiết kế hình ảnh lớn sang trọng (Hero Image) */
+        .luxury-image-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 20px;
+            box-shadow: 0 30px 60px rgba(15, 23, 42, 0.08);
+            margin-bottom: 4rem;
+        }
+
+        .luxury-img {
+            width: 100%;
+            max-height: 550px;
+            object-fit: cover;
+        }
+
+        /* Nội dung bài viết chuẩn Typography thượng lưu */
+        .luxury-content {
+            font-size: 1.2rem;
+            line-height: 1.95;
+            color: #334155;
+            text-align: justify;
+            letter-spacing: 0.1px;
+        }
+
+            /* Tạo điểm nhấn chữ cái đầu tiên to lớn (Drop Cap) */
+            .luxury-content::first-letter {
+                font-family: 'Playfair Display', serif;
+                font-size: 4.5rem;
+                font-weight: 700;
+                float: left;
+                color: #0f172a;
+                line-height: 0.8;
+                margin-top: 6px;
+                margin-right: 12px;
+            }
+
+        /* Nút bấm quay lại tinh giản */
+        .btn-luxury-back {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #475569;
+            background: transparent;
+            border: 1px solid #cbd5e1;
+            padding: 12px 28px;
+            border-radius: 40px;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+            .btn-luxury-back:hover {
+                color: #0f172a;
+                border-color: #0f172a;
+                background-color: #f8fafc;
+                transform: translateX(-5px);
+            }
+
+        .footer-divider {
+            border-top: 1px solid #e2e8f0;
+            margin-top: 5rem;
+            padding-top: 2.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="luxury-article-wrapper">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-9 col-md-11">
+
+                    <nav aria-label="breadcrumb" class="luxury-breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="/Post/Index">Danh sách bài viết</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Chi tiết bài viết</li>
+                        </ol>
+                    </nav>
+
+                    <h1 class="luxury-title">@Model.Title</h1>
+
+                    <div class="luxury-meta">
+                        <span><i class="bi bi-calendar3"></i> Đăng ngày: @Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")</span>
+                        <span>•</span>
+                        <span><i class="bi bi-clock"></i> 3 phút đọc</span>
+                    </div>
+
+                    <div class="luxury-hr"></div>
+
+                    <div class="luxury-image-container">
+                        <img src="@Model.ImageUrl" class="luxury-img" alt="@Model.Title" onError="this.src='https://placehold.co/1200x600/f8fafc/64748b?text=Premium+Image'">
+                    </div>
+
+                    <div class="luxury-content">
+                        @Model.Content
+                    </div>
+
+                    <div class="footer-divider">
+                        <a href="/Post/Index" class="btn-luxury-back">
+                            <i class="bi bi-arrow-left"></i> Quay lại danh sách
+                        </a>
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>
-</div>
+
+</body>
+</html>

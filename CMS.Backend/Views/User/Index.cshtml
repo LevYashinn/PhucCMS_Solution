@@ -1,44 +1,63 @@
 ﻿@model IEnumerable<CMS.Data.Entities.User>
+    @{
+    Layout = "_LayoutAdmin";
+    }
 
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="text-dark">QUẢN LÝ THÀNH VIÊN</h2>
-        <button class="btn btn-success btn-sm">+ Thêm thành viên mới</button>
-    </div>
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="text-dark fw-bold">QUẢN LÝ THÀNH VIÊN</h2>
+            <a href="/User/Create" class="btn btn-success btn-sm">
+                <i class="bi bi-person-plus"></i> + Thêm thành viên mới
+            </a>
+        </div>
 
-    <table class="table table-hover shadow-sm border">
-        <thead class="table-light">
-            <tr>
-                <th>ID</th>
-                <th>Tên Đăng Nhập</th>
-                <th>Họ Và Tên</th>
-                <th>Quyền Hạn</th>
-                <th>Thao Tác</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var user in Model)
+        <table class="table table-hover shadow-sm border align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th>Tên Đăng Nhập</th>
+                    <th>Họ Và Tên</th>
+                    <th>Quyền Hạn</th>
+                    <th style="width: 180px;">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
             {
+                foreach (var user in Model)
+                {
                 <tr>
                     <td>@user.Id</td>
                     <td><strong>@user.Username</strong></td>
                     <td>@user.FullName</td>
                     <td>
-                        @if (user.Role == "Administrator")
-                        {
-                            <span class="badge bg-danger">@user.Role</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-info text-dark">@user.Role</span>
-                        }
+                        @if (user.Role == "Admin" || user.Role == "Administrator")
+                            {
+                        <span class="badge bg-danger">@user.Role</span>
+                            }
+                            else
+                            {
+                        <span class="badge bg-info text-dark">@user.Role</span>
+                            }
                     </td>
                     <td>
-                        <button class="btn btn-sm btn-outline-warning">Sửa</button>
-                        <button class="btn btn-sm btn-outline-danger">Xóa</button>
+                        <a href="/User/Edit/@user.Id" class="btn btn-sm btn-outline-warning me-1">
+                            <i class="bi bi-pencil"></i> Sửa
+                        </a>
+                        <a href="/User/Delete/@user.Id" class="btn btn-sm btn-outline-danger"
+                           onclick="return confirm('Bạn có chắc chắn muốn xóa thành viên @user.FullName này không?')">
+                            <i class="bi bi-trash"></i> Xóa
+                        </a>
                     </td>
                 </tr>
+                }
             }
-        </tbody>
-    </table>
-</div>
+            else
+            {
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-3">Danh sách thành viên trống!</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>

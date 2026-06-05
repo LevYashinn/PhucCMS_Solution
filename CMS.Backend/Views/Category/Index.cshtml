@@ -1,16 +1,19 @@
 ﻿@model IEnumerable<CMS.Data.Entities.Category>
-<h2 class="text-primary">DANH SÁCH DANH MỤC (DỮ LIỆU THẬT LẤY TỪ DATABASE)</h2>
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Tên danh mục</th>
-            <th>Mô tả</th>
-            <th style="width:150px">Thao tác</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
+    @{
+    Layout = "_LayoutAdmin";
+    }
+    <h2 class="text-primary">DANH SÁCH DANH MỤC (DỮ LIỆU THẬT LẤY TỪ DATABASE)</h2>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Tên danh mục</th>
+                <th>Mô tả</th>
+                <th style="width:150px">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
         {
             <tr>
                 <td>@item.Id</td>
@@ -26,5 +29,5 @@
                 </td>
             </tr>
         }
-    </tbody>
-</table>
+        </tbody>
+    </table>

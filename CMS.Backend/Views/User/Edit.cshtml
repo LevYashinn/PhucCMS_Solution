@@ -1,0 +1,58 @@
+﻿@model CMS.Data.Entities.User
+@{
+    Layout = "_LayoutAdmin";
+}
+
+<div class="container mt-4" style="max-width: 900px;">
+    <div class="card shadow border-0">
+        <div class="card-header bg-warning text-dark py-3">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-pencil-square"></i> CẬP NHẬT THÔNG TIN THÀNH VIÊN</h5>
+        </div>
+        <div class="card-body p-4">
+            <form action="/User/Edit" method="post">
+                <input type="hidden" asp-for="Id" />
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="fw-bold text-secondary mb-1">Tên đăng nhập:</label>
+                        <input asp-for="Username" class="form-control" readonly />
+                        <small class="text-muted">Tên đăng nhập không được phép sửa.</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="fw-bold text-secondary mb-1">Mật khẩu mới:</label>
+                        <input type="password" name="NewPassword" class="form-control" placeholder="Để trống nếu không muốn đổi" />
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="fw-bold text-secondary mb-1">Họ và Tên:</label>
+                        <input asp-for="FullName" class="form-control" required />
+                        <span asp-validation-for="FullName" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="fw-bold text-secondary mb-1">Vai trò:</label>
+                        <select asp-for="Role" class="form-select">
+                            <option value="Admin">Admin</option>
+                            <option value="Editor">Editor</option>
+                        </select>
+                        <span asp-validation-for="Role" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <input type="hidden" asp-for="PasswordHash" />
+
+                <div class="d-flex gap-2 border-top pt-3">
+                    <button type="submit" class="btn btn-warning fw-bold px-4 shadow-sm">Cập nhật</button>
+                    <a href="/User/Index" class="btn btn-secondary px-4">Quay lại</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

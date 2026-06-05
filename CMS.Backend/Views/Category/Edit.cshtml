@@ -1,0 +1,31 @@
+﻿@model CMS.Data.Entities.Category
+@{
+    Layout = "_LayoutAdmin";
+}
+@{
+    ViewData["Title"] = "Chỉnh sửa danh mục";
+}
+
+<div class="container mt-4">
+    <h3 class="text-primary mb-4">CHỈNH SỬA DANH MỤC</h3>
+
+    <form asp-action="Edit" method="post" class="w-50">
+
+        <input type="hidden" asp-for="Id" />
+
+        <div class="mb-3">
+            <label class="form-label font-weight-bold">Tên danh mục</label>
+            <input asp-for="Name" class="form-control" placeholder="Nhập tên danh mục..." required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label font-weight-bold">Mô tả chi tiết</label>
+            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-success">Lưu Thay Đổi</button>
+            <a asp-action="Index" class="btn btn-secondary">Hủy Bỏ</a>
+        </div>
+    </form>
+</div>
