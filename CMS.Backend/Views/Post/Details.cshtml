@@ -162,7 +162,7 @@
 
                     <nav aria-label="breadcrumb" class="luxury-breadcrumb">
                         <ol class="breadcrumb mb-0">
-                            <li class="breadcrumb-item"><a href="/Post/Index">Danh sách bài viết</a></li>
+                            <li class="breadcrumb-item"><a href="/">Trang chủ</a></li>
                             <li class="breadcrumb-item active" aria-current="page">Chi tiết bài viết</li>
                         </ol>
                     </nav>
@@ -182,12 +182,12 @@
                     </div>
 
                     <div class="luxury-content">
-                        @Model.Content
+                        @Html.Raw(Model.Content)
                     </div>
 
                     <div class="footer-divider">
-                        <a href="/Post/Index" class="btn-luxury-back">
-                            <i class="bi bi-arrow-left"></i> Quay lại danh sách
+                        <a href="/" class="btn-luxury-back">
+                            <i class="bi bi-arrow-left"></i> Quay lại trang chủ
                         </a>
                     </div>
 
