@@ -25,6 +25,18 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.AccessDeniedPath = "/Account/AccessDenied"; // Đường dẫn đá về khi không đủ quyền (Access Denied)
     });
 
+// ---- CẤU HÌNH CORS (THÊM VÀO TRƯỚC builder.Build()) ----
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000") // Cho phép ReactJS ở port 3000 gọi tới
+              .AllowAnyHeader()                     // Cho phép mọi loại Header (Content-Type, Authorization...)
+              .AllowAnyMethod()                     // Cho phép mọi phương thức HTTP (GET, POST, PUT, DELETE)
+              .AllowCredentials();                  // Hỗ trợ truyền Cookie/Session nếu cần sau này
+    });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -47,6 +59,12 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+app.UseStaticFiles();
+
+// Kích hoạt CORS đúng vị trí này
+app.UseCors("AllowReactApp");
+
+app.UseAuthorization();
 
 // THÊM MỚI: Bật Middleware Xác thực (BẮT BUỘC đặt trước UseAuthorization)
 app.UseAuthentication();
