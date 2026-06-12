@@ -1,5 +1,6 @@
 ﻿using CMS.Backend.Models;
 using CMS.Data;
+using CMS.Data.Entities; // Bổ sung để Controller hiểu các class Product, Order...
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
@@ -12,7 +13,6 @@ namespace CMS.Backend.Controllers
         private readonly ILogger<HomeController> _logger;
         private readonly ApplicationDbContext _context;
 
-        // "Tiêm" cả Logger và DbContext vào hàm khởi tạo
         public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
         {
             _logger = logger;
@@ -21,13 +21,11 @@ namespace CMS.Backend.Controllers
 
         public IActionResult Index()
         {
-            // LINQ: Lấy 3 bài viết mới nhất từ SQL Server
             var latestPosts = _context.Posts
-                                      .Include(p => p.Category) // Lấy kèm tên danh mục để hiển thị 
-                                      .OrderByDescending(p => p.CreatedDate) // Sắp xếp ngày mới nhất lên đầu 
-                                      .Take(3) // Chỉ lấy đúng 3 bản tin đầu tiên
+                                      .Include(p => p.Category)
+                                      .OrderByDescending(p => p.CreatedDate)
+                                      .Take(3)
                                       .ToList();
-
             return View(latestPosts);
         }
 
@@ -40,6 +38,34 @@ namespace CMS.Backend.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        // HÀM DASHBOARD ĐÃ ĐƯỢC NÂNG CẤP LẤY DỮ LIỆU THẬT 100%
+        public IActionResult Dashboard()
+        {
+            // 1. Số liệu cho 4 thẻ thống kê trên cùng
+            ViewBag.TotalProducts = _context.Products.Count();
+            ViewBag.TotalPosts = _context.Posts.Count();
+            ViewBag.TotalCategories = _context.CategoryProducts.Count();
+            ViewBag.TotalUsers = _context.Users.Count();
+
+            // 2. Lấy danh sách 5 đơn hàng mới nhất (Kèm theo thông tin Khách hàng)
+            var recentOrders = _context.Orders
+                                       .Include(o => o.Customer)
+                                       .OrderByDescending(o => o.OrderDate)
+                                       .Take(5)
+                                       .ToList();
+            ViewBag.RecentOrders = recentOrders;
+
+            // 3. Lấy danh sách các sản phẩm sắp hết hàng (Tồn kho từ 5 đôi trở xuống)
+            var lowStockProducts = _context.Products
+                                           .Where(p => p.StockQuantity <= 5)
+                                           .OrderBy(p => p.StockQuantity)
+                                           .Take(5)
+                                           .ToList();
+            ViewBag.LowStockProducts = lowStockProducts;
+
+            return View();
         }
     }
 }
