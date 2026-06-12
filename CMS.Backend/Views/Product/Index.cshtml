@@ -1,67 +1,73 @@
 ﻿@model List<CMS.Data.Entities.Product>
-    @{
+@{
     Layout = "_LayoutAdmin";
     ViewData["Title"] = "Quản lý sản phẩm";
-    }
+}
 
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="text-dark font-weight-bold m-0 text-uppercase">BÀI TẬP 4: LIỆT KÊ DANH SÁCH PRODUCTS</h3>
-            <a href="/Product/Create" class="btn btn-success btn-sm">
-                <i class="bi bi-plus-circle"></i> + Thêm sản phẩm mới
-            </a>
-        </div>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="text-dark font-weight-bold m-0 text-uppercase">BÀI TẬP 4: LIỆT KÊ DANH SÁCH PRODUCTS</h3>
+        <a href="/Product/Create" class="btn btn-success btn-sm">
+            <i class="bi bi-plus-circle"></i> + Thêm sản phẩm mới
+        </a>
+    </div>
 
-        <table class="table table-bordered table-striped table-hover align-middle shadow-sm bg-white">
-            <thead class="table-primary text-dark">
-                <tr>
-                    <th style="width: 80px;" class="text-center">ID</th>
-                    <th style="width: 100px;" class="text-center">Hình Ảnh</th>
-                    <th style="width: 250px;">Tên Sản Phẩm</th>
-                    <th>Mô Tả Sản Phẩm</th>
-                    <th style="width: 140px;" class="text-end">Giá Bán</th>
-                    <th style="width: 100px;" class="text-center">Tồn Kho</th>
-                    <th class="text-center" style="width: 150px;">Thao Tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (Model != null && Model.Any())
+    <table class="table table-bordered table-striped table-hover align-middle shadow-sm bg-white">
+        <thead class="table-primary text-dark">
+            <tr>
+                <th style="width: 80px;" class="text-center">ID</th>
+                <th style="width: 100px;" class="text-center">Hình Ảnh</th>
+                <th style="width: 200px;">Tên Sản Phẩm</th>
+                <th style="width: 150px;">Danh Mục</th>
+                <th>Mô Tả Sản Phẩm</th>
+                <th style="width: 140px;" class="text-end">Giá Bán</th>
+                <th style="width: 100px;" class="text-center">Tồn Kho</th>
+                <th class="text-center" style="width: 150px;">Thao Tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
             {
                 foreach (var item in Model)
                 {
-                <tr>
-                    <td class="text-center font-weight-bold">@item.Id</td>
-                    <td class="text-center">
-                        <img src="@item.ImageUrl" alt="product-img" class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;" onError="this.src='https://placehold.co/60'">
-                    </td>
-                    <td class="font-weight-bold text-primary">@item.Name</td>
-                    <td class="text-muted text-truncate" style="max-width: 300px;">@item.Description</td>
-                    <td class="text-end text-danger font-weight-bold">@item.Price.ToString("N0") đ</td>
-                    <td class="text-center">
-                        <span class="badge @(item.StockQuantity > 10 ? "bg-success" : "bg-warning")">
-                            @item.StockQuantity
-                        </span>
-                    </td>
-                    <td class="text-center">
-                        <a href="/Product/Edit/@item.Id" class="btn btn-warning btn-sm py-1 px-2 text-white me-1">
-                            <i class="bi bi-pencil"></i> Sửa
-                        </a>
-                        <a href="/Product/Delete/@item.Id" class="btn btn-danger btn-sm py-1 px-2"
-                           onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này không?')">
-                            <i class="bi bi-trash"></i> Xóa
-                        </a>
-                    </td>
-                </tr>
+                    <tr>
+                        <td class="text-center font-weight-bold">@item.Id</td>
+                        <td class="text-center">
+                            <img src="@item.ImageUrl" alt="product-img" class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;" onError="this.src='https://placehold.co/60'">
+                        </td>
+                        <td class="font-weight-bold text-primary">@item.Name</td>
+
+                        <td class="text-center">
+                            <span class="badge bg-info text-dark">@item.CategoryProduct?.Name</span>
+                        </td>
+
+                        <td class="text-muted text-truncate" style="max-width: 300px;">@item.Description</td>
+                        <td class="text-end text-danger font-weight-bold">@item.Price.ToString("N0") đ</td>
+                        <td class="text-center">
+                            <span class="badge @(item.StockQuantity > 10 ? "bg-success" : "bg-warning")">
+                                @item.StockQuantity
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <a href="/Product/Edit/@item.Id" class="btn btn-warning btn-sm py-1 px-2 text-white me-1">
+                                <i class="bi bi-pencil"></i> Sửa
+                            </a>
+                            <a href="/Product/Delete/@item.Id" class="btn btn-danger btn-sm py-1 px-2"
+                               onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này không?')">
+                                <i class="bi bi-trash"></i> Xóa
+                            </a>
+                        </td>
+                    </tr>
                 }
             }
             else
             {
                 <tr>
-                    <td colspan="7" class="text-center text-muted py-3">
+                    <td colspan="8" class="text-center text-muted py-3">
                         Chưa có dữ liệu sản phẩm nào. Hãy kiểm tra lại SQL Server!
                     </td>
                 </tr>
             }
-            </tbody>
-        </table>
-    </div>
+        </tbody>
+    </table>
+</div>
