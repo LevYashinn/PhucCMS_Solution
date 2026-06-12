@@ -12,17 +12,24 @@ namespace CMS.Data.Entities
     {
         [Key]
         public int Id { get; set; }
+
         [Required(ErrorMessage = "Tên sản phẩm không được để trống")]
         public string Name { get; set; }
+
         public string? Description { get; set; }
 
         [Range(0, double.MaxValue)]
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
-        public int StockQuantity {  get; set; }
+
+        public int StockQuantity { get; set; }
+
         public string? ImageUrl { get; set; }
+
         public int CategoryProductId { get; set; }
+
         [ForeignKey("CategoryProductId")]
-        public virtual CategoryProduct? ProductCategory { get; set; }
+        // ĐÃ SỬA Ở ĐÂY: Đổi ProductCategory thành CategoryProduct
+        public virtual CategoryProduct? CategoryProduct { get; set; }
     }
 }

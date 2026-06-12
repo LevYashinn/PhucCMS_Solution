@@ -1,0 +1,62 @@
+﻿@model CMS.Data.Entities.CategoryProduct
+@{
+    Layout = "_LayoutAdmin";
+}
+
+<div class="container mt-4 px-4" style="max-width: 750px;">
+    <div class="card shadow-lg border-0 rounded-3">
+        <div class="card-header bg-dark text-white py-3 d-flex align-items-center">
+            <i class="bi bi-folder-plus fs-4 me-2"></i>
+            <h4 class="mb-0 fw-bold">THÊM DANH MỤC SẢN PHẨM</h4>
+        </div>
+
+        <div class="card-body p-4 bg-light">
+            <form asp-action="Create" method="post" class="needs-validation" novalidate>
+
+                <div class="mb-4">
+                    <label asp-for="Name" class="form-label fw-bold text-dark">Tên danh mục <span class="text-danger">*</span></label>
+                    <input asp-for="Name" class="form-control form-control-lg border-2 shadow-sm" required placeholder="Nhập tên danh mục (VD: Giày Running, Giày Sandal...)" />
+                    <div class="invalid-feedback">Vui lòng nhập tên danh mục sản phẩm.</div>
+                    <span asp-validation-for="Name" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="Description" class="form-label fw-bold text-dark">Mô tả chi tiết</label>
+                    <textarea asp-for="Description" class="form-control border-2 shadow-sm" rows="5" placeholder="Mô tả ngắn gọn về nhóm sản phẩm này..."></textarea>
+                    <span asp-validation-for="Description" class="text-danger small"></span>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center border-top pt-4">
+                    <a asp-action="Index" class="btn btn-outline-secondary px-4 py-2 fw-bold">
+                        <i class="bi bi-arrow-left"></i> Quay lại
+                    </a>
+                    <button type="submit" class="btn btn-dark btn-lg px-5 fw-bold shadow">
+                        <i class="bi bi-check-circle-fill me-1"></i> LƯU DANH MỤC
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+    <script>
+        // Bootstrap 5 Validation script
+        (function () {
+            'use strict'
+            var forms = document.querySelectorAll('.needs-validation')
+            Array.prototype.slice.call(forms).forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+        })()
+    </script>
+}

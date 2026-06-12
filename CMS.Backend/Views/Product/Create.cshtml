@@ -18,6 +18,13 @@
                     <span asp-validation-for="Name" class="text-danger small"></span>
                 </div>
 
+                <div class="mb-3">
+                    <label asp-for="CategoryProductId" class="form-label fw-bold text-secondary">Danh mục sản phẩm</label>
+                    <select asp-for="CategoryProductId" class="form-select" asp-items="ViewBag.Categories" required>
+                        <option value="">-- Vui lòng chọn danh mục --</option>
+                    </select>
+                    <span asp-validation-for="CategoryProductId" class="text-danger small"></span>
+                </div>
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label asp-for="Price" class="form-label fw-bold text-secondary">Giá bán (VNĐ)</label>

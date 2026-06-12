@@ -1,10 +1,11 @@
 ﻿using CMS.Data;
 using CMS.Data.Entities;
-using Microsoft.AspNetCore.Http; // Bắt buộc phải có để dùng IFormFile nhận file ảnh
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.IO; // Bắt buộc phải có để xử lý Path, Directory, FileStream khi upload ảnh
+using System.IO;
 using System.Linq;
 
 namespace CMS.Backend.Controllers
@@ -13,7 +14,6 @@ namespace CMS.Backend.Controllers
     {
         private readonly ApplicationDbContext _context;
 
-        // Tiêm DbContext kết nối SQL Server vào
         public ProductController(ApplicationDbContext context)
         {
             _context = context;
@@ -22,7 +22,10 @@ namespace CMS.Backend.Controllers
         // 1. Action hiển thị danh sách sản phẩm
         public IActionResult Index()
         {
-            var products = _context.Products.OrderByDescending(p => p.Id).ToList();
+            var products = _context.Products
+                                   .Include(p => p.CategoryProduct)
+                                   .OrderByDescending(p => p.Id)
+                                   .ToList();
             return View(products);
         }
 
@@ -30,6 +33,7 @@ namespace CMS.Backend.Controllers
         [HttpGet]
         public IActionResult Create()
         {
+            ViewBag.Categories = new SelectList(_context.CategoryProducts.ToList(), "Id", "Name");
             return View();
         }
 
@@ -37,9 +41,16 @@ namespace CMS.Backend.Controllers
         [HttpPost]
         public IActionResult Create(Product model, IFormFile uploadImage)
         {
+            // Bỏ qua validation cho Navigation Property để tránh lỗi ModelState false ảo
+            ModelState.Remove("CategoryProduct");
+
+            if (model.CategoryProductId <= 0)
+            {
+                ModelState.AddModelError("CategoryProductId", "Vui lòng chọn danh mục sản phẩm.");
+            }
+
             if (ModelState.IsValid)
             {
-                // Xử lý upload ảnh nếu người dùng có chọn file
                 if (uploadImage != null && uploadImage.Length > 0)
                 {
                     string folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
@@ -61,7 +72,7 @@ namespace CMS.Backend.Controllers
                 return RedirectToAction("Index");
             }
 
-            // Nếu form nhập bị lỗi ràng buộc dữ liệu, trả lại chính dữ liệu đó kèm thông báo lỗi
+            ViewBag.Categories = new SelectList(_context.CategoryProducts.ToList(), "Id", "Name");
             return View(model);
         }
 
@@ -72,6 +83,7 @@ namespace CMS.Backend.Controllers
             var product = _context.Products.Find(id);
             if (product == null) return NotFound();
 
+            ViewBag.Categories = new SelectList(_context.CategoryProducts.ToList(), "Id", "Name", product.CategoryProductId);
             return View(product);
         }
 
@@ -79,11 +91,30 @@ namespace CMS.Backend.Controllers
         [HttpPost]
         public IActionResult Edit(Product model, IFormFile uploadImage)
         {
+            // BẮT BUỘC THÊM DÒNG NÀY ĐỂ FIX LỖI VALIDATION ẢO
+            ModelState.Remove("CategoryProduct");
+
+            if (model.CategoryProductId <= 0)
+            {
+                ModelState.AddModelError("CategoryProductId", "Vui lòng chọn danh mục sản phẩm.");
+            }
+
             if (ModelState.IsValid)
             {
+                // TÌM SẢN PHẨM TRONG DB ĐỂ CẬP NHẬT THAY VÌ DÙNG LỆNH UPDATE(MODEL)
+                var productInDb = _context.Products.FirstOrDefault(p => p.Id == model.Id);
+                if (productInDb == null) return NotFound();
+
+                // Cập nhật các trường thông tin cơ bản
+                productInDb.Name = model.Name;
+                productInDb.CategoryProductId = model.CategoryProductId;
+                productInDb.Price = model.Price;
+                productInDb.StockQuantity = model.StockQuantity;
+                productInDb.Description = model.Description;
+
+                // Xử lý ảnh nếu người dùng có chọn ảnh mới
                 if (uploadImage != null && uploadImage.Length > 0)
                 {
-                    // Quy trình upload ảnh mới thay thế
                     string folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
                     if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
 
@@ -95,23 +126,28 @@ namespace CMS.Backend.Controllers
                         uploadImage.CopyTo(stream);
                     }
 
-                    model.ImageUrl = "/uploads/" + fileName;
-                }
-                else
-                {
-                    // Nếu không chọn ảnh mới, lấy lại đường dẫn ảnh cũ từ DB để giữ nguyên
-                    var oldProduct = _context.Products.AsNoTracking().FirstOrDefault(p => p.Id == model.Id);
-                    if (oldProduct != null && string.IsNullOrEmpty(model.ImageUrl))
+                    // Xóa ảnh vật lý cũ cho nhẹ ổ cứng (nếu có)
+                    if (!string.IsNullOrEmpty(productInDb.ImageUrl))
                     {
-                        model.ImageUrl = oldProduct.ImageUrl;
+                        string oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", productInDb.ImageUrl.TrimStart('/'));
+                        if (System.IO.File.Exists(oldFilePath))
+                        {
+                            System.IO.File.Delete(oldFilePath);
+                        }
                     }
-                }
 
-                _context.Products.Update(model);
+                    // Cập nhật đường dẫn ảnh mới vào DB
+                    productInDb.ImageUrl = "/uploads/" + fileName;
+                }
+                // Nếu uploadImage == null, productInDb.ImageUrl sẽ tự động giữ nguyên ảnh cũ
+
+                // Lưu lại thay đổi
                 _context.SaveChanges();
                 return RedirectToAction("Index");
             }
 
+            // Nếu form có lỗi nhập liệu, nạp lại ViewBag và trả về View
+            ViewBag.Categories = new SelectList(_context.CategoryProducts.ToList(), "Id", "Name", model.CategoryProductId);
             return View(model);
         }
 
@@ -121,7 +157,6 @@ namespace CMS.Backend.Controllers
             var product = _context.Products.Find(id);
             if (product != null)
             {
-                // Thao tác xóa file vật lý trong thư mục wwwroot nếu muốn giải phóng bộ nhớ (Tùy chọn)
                 if (!string.IsNullOrEmpty(product.ImageUrl))
                 {
                     string oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", product.ImageUrl.TrimStart('/'));

@@ -7,6 +7,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
+// --- THÊM 2 DÒNG NÀY ĐỂ HỖ TRỢ SWAGGER ---
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+// ------------------------------------------
+
+
 // Đăng ký DbContext vào hệ thống
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -27,6 +33,14 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Home/Error");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+}
+
+else
+{
+    // --- THÊM 2 DÒNG NÀY ĐỂ HIỂN THỊ GIAO DIỆN SWAGGER ---
+    app.UseSwagger();
+    app.UseSwaggerUI();
+    // ----------------------------------------------------
 }
 
 app.UseHttpsRedirection();
