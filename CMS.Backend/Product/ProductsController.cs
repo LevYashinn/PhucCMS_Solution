@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using CMS.Data;
+﻿using CMS.Data;
+using CMS.Data.Entities;
+using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 
 namespace CMS.Backend.Controllers
@@ -27,7 +28,8 @@ namespace CMS.Backend.Controllers
                     p.Price,
                     p.ImageUrl,
                     p.StockQuantity,
-                    CategoryName = p.CategoryProduct.Name // Lấy tên danh mục
+                    CategoryProductId = p.CategoryProductId, // BẮT BUỘC THÊM DÒNG NÀY
+                    CategoryName = p.CategoryProduct.Name
                 })
                 .ToList();
             return Ok(products);
@@ -44,7 +46,9 @@ namespace CMS.Backend.Controllers
                     p.Name,
                     p.Price,
                     p.ImageUrl,
-                    p.StockQuantity
+                    p.StockQuantity,
+                    CategoryProductId = p.CategoryProductId, // BẮT BUỘC THÊM DÒNG NÀY
+                    CategoryName = p.CategoryProduct.Name
                 })
                 .ToList();
             return Ok(products);

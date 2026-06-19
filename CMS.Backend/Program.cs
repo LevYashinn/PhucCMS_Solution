@@ -4,8 +4,14 @@ using CMS.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. Add services to the container.
-builder.Services.AddControllersWithViews();
+// 1. Add services to the container (ĐÃ THÊM THUỐC GIẢI VÒNG LẶP VÔ HẠN JSON)
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(options =>
+    {
+        // Dòng này cực kỳ quan trọng: Báo cho C# biết nếu thấy vòng lặp Product -> Category -> Product thì bỏ qua, không dịch nữa.
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

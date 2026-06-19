@@ -19,13 +19,26 @@ namespace CMS.Backend.Controllers
             _context = context;
         }
 
-        // 1. Action hiển thị danh sách sản phẩm
-        public IActionResult Index()
+        // 1. Action hiển thị danh sách sản phẩm (ĐÃ THÊM LỌC DANH MỤC)
+        public IActionResult Index(int? categoryId)
         {
-            var products = _context.Products
-                                   .Include(p => p.CategoryProduct)
-                                   .OrderByDescending(p => p.Id)
-                                   .ToList();
+            // Bắt đầu với truy vấn tất cả sản phẩm
+            var query = _context.Products
+                                .Include(p => p.CategoryProduct)
+                                .AsQueryable();
+
+            // Nếu người dùng chọn danh mục (categoryId có giá trị), lọc theo ID đó
+            if (categoryId.HasValue)
+            {
+                query = query.Where(p => p.CategoryProductId == categoryId.Value);
+            }
+
+            var products = query.OrderByDescending(p => p.Id).ToList();
+
+            // Lưu trạng thái danh mục để Highlight trên menu (nếu cần)
+            ViewBag.SelectedCategoryId = categoryId;
+            ViewBag.Categories = _context.CategoryProducts.ToList(); // Đảm bảo sidebar có dữ liệu
+
             return View(products);
         }
 
@@ -75,7 +88,7 @@ namespace CMS.Backend.Controllers
             return View(model);
         }
 
-        // 4. GET: Hiển thị form Sửa sản phẩm kèm dữ liệu cũ
+        // 4. GET: Hiển thị form Sửa sản phẩm
         [HttpGet]
         public IActionResult Edit(int id)
         {
@@ -88,11 +101,10 @@ namespace CMS.Backend.Controllers
 
         // 5. POST: Xử lý Cập nhật thay đổi sản phẩm
         [HttpPost]
-        public IActionResult Edit(Product model, IFormFile? uploadImage) // ĐÃ SỬA: Thêm dấu ?
+        public IActionResult Edit(Product model, IFormFile? uploadImage)
         {
-            // BẮT BUỘC THÊM 2 DÒNG NÀY ĐỂ FIX LỖI VALIDATION ẢO
             ModelState.Remove("CategoryProduct");
-            ModelState.Remove("uploadImage"); // ĐÃ SỬA: Loại bỏ lỗi bắt buộc file
+            ModelState.Remove("uploadImage");
 
             if (model.CategoryProductId <= 0)
             {
@@ -142,7 +154,7 @@ namespace CMS.Backend.Controllers
             return View(model);
         }
 
-        // 6. GET/POST: Thực thi Xóa sản phẩm ra khỏi Database
+        // 6. Xóa sản phẩm
         public IActionResult Delete(int id)
         {
             var product = _context.Products.Find(id);
@@ -151,31 +163,19 @@ namespace CMS.Backend.Controllers
                 if (!string.IsNullOrEmpty(product.ImageUrl))
                 {
                     string oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", product.ImageUrl.TrimStart('/'));
-                    if (System.IO.File.Exists(oldFilePath))
-                    {
-                        System.IO.File.Delete(oldFilePath);
-                    }
+                    if (System.IO.File.Exists(oldFilePath)) System.IO.File.Delete(oldFilePath);
                 }
-
                 _context.Products.Remove(product);
                 _context.SaveChanges();
             }
             return RedirectToAction("Index");
         }
-        // Action hiển thị chi tiết sản phẩm
+
+        // 7. Chi tiết
         public IActionResult Details(int id)
         {
-            // Tìm sản phẩm theo ID, bao gồm cả thông tin danh mục
-            var product = _context.Products
-                                  .Include(p => p.CategoryProduct)
-                                  .FirstOrDefault(p => p.Id == id);
-
-            // Nếu không tìm thấy sản phẩm, trả về lỗi 404
-            if (product == null)
-            {
-                return NotFound();
-            }
-
+            var product = _context.Products.Include(p => p.CategoryProduct).FirstOrDefault(p => p.Id == id);
+            if (product == null) return NotFound();
             return View(product);
         }
     }
