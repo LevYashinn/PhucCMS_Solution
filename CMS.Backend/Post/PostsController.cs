@@ -24,8 +24,9 @@ namespace CMS.Backend.Controllers
                .Select(p => new {
                    p.Id,
                    p.Title,
+                   p.Content,     // <--- ĐÃ THÊM DÒNG NÀY ĐỂ REACT CÓ NỘI DUNG
                    p.ImageUrl,
-                   p.CreatedDate, // Đã sửa từ CreatedAt sang CreatedDate
+                   p.CreatedDate,
                    CategoryName = p.Category.Name
                })
                .ToList();
@@ -41,8 +42,9 @@ namespace CMS.Backend.Controllers
                 .Select(p => new {
                     p.Id,
                     p.Title,
+                    p.Content,    // <--- ĐÃ THÊM DÒNG NÀY
                     p.ImageUrl,
-                    p.CreatedDate // Đã sửa từ CreatedAt sang CreatedDate
+                    p.CreatedDate
                 })
                 .ToList();
             return Ok(posts);
@@ -52,6 +54,7 @@ namespace CMS.Backend.Controllers
         [HttpGet("{id}")]
         public IActionResult GetDetail(int id)
         {
+            // Hàm này bạn trả về nguyên object 'post' nên nó đã tự động có đủ Content rồi, không cần sửa
             var post = _context.Posts.FirstOrDefault(p => p.Id == id);
 
             if (post == null)
