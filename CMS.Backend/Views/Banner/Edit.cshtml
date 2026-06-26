@@ -1,0 +1,78 @@
+﻿@model CMS.Data.Entities.Banners
+
+@{
+    ViewData["Title"] = "Chỉnh Sửa Banner";
+    Layout = "_LayoutAdmin";
+}
+
+<div class="container mt-4" style="max-width: 800px;">
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 bg-info text-white">
+            <h5 class="m-0 font-weight-bold"><i class="fas fa-edit mr-2"></i>Cập Nhật Banner</h5>
+        </div>
+        <div class="card-body">
+            <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                <input type="hidden" asp-for="Id" />
+
+                <div class="form-group mb-3">
+                    <label asp-for="Title" class="form-label font-weight-bold">Tiêu Đề Banner</label>
+                    <input asp-for="Title" class="form-control" required />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label class="form-label font-weight-bold">Hình Ảnh Hiện Tại</label>
+                    <div class="mb-3 text-center">
+                        <img id="imgPreview" src="@Model.ImageUrl" alt="Banner" style="max-height: 180px; max-width: 100%; border-radius: 6px;" class="border shadow-sm p-1" />
+                    </div>
+                    <label class="form-label font-weight-bold text-primary">Chọn Ảnh Mới (Nếu Muốn Thay Đổi)</label>
+                    <div class="custom-file">
+                        <input type="file" name="uploadImage" class="form-control" accept="image/*" onchange="previewImage(this);" />
+                    </div>
+                </div>
+
+                <div class="form-group mb-3">
+                    <label asp-for="LinkUrl" class="form-label font-weight-bold">Đường Dẫn Đích (Link URL)</label>
+                    <input asp-for="LinkUrl" class="form-control" />
+                    <span asp-validation-for="LinkUrl" class="text-danger small"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 form-group mb-3">
+                        <label asp-for="OrderDisplay" class="form-label font-weight-bold">Thứ Tự Hiển Thị</label>
+                        <input asp-for="OrderDisplay" type="number" class="form-control" min="1" required />
+                        <span asp-validation-for="OrderDisplay" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6 form-group mb-3 d-flex align-items-center pl-4" style="padding-top: 32px;">
+                        <div class="form-check form-switch">
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox" id="isActiveCheck" />
+                            <label class="form-check-label font-weight-bold ml-2" for="isActiveCheck">Kích Hoạt Hiển Thị</label>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4" />
+
+                <div class="d-flex justify-content-between">
+                    <a asp-action="Index" class="btn btn-secondary"><i class="fas fa-arrow-left mr-1"></i> Hủy & Quay lại</a>
+                    <button type="submit" class="btn btn-info px-4"><i class="fas fa-check mr-1"></i> Cập Nhật Banner</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function previewImage(input) {
+        var preview = document.getElementById('imgPreview');
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                preview.src = e.target.result;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>

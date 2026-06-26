@@ -21,6 +21,11 @@ namespace CMS.Data
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderDetail> OrderDetails { get; set; }
 
+        // ==========================================
+        // 🌟 ĐÂY CHÍNH LÀ DÒNG BỊ THIẾU GÂY RA LỖI ĐỎ
+        // ==========================================
+        public DbSet<Banners> Banners { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
