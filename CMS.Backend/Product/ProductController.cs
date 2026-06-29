@@ -202,38 +202,74 @@ namespace CMS.Backend.Controllers
             return Json(categories);
         }
 
-        // 🌟 THÊM MỚI: API TÌM KIẾM THỜI GIAN THỰC & LỌC THEO GIÁ 🌟
+        // 🌟 API TÌM KIẾM THỜI GIAN THỰC & LỌC THEO GIÁ
         [AllowAnonymous]
         [HttpGet("api/products/search")]
         public IActionResult SearchProducts([FromQuery] string? keyword, [FromQuery] decimal? minPrice, [FromQuery] decimal? maxPrice)
         {
-            // 1. Lấy toàn bộ sản phẩm ra làm gốc
             var query = _context.Products.AsQueryable();
 
-            // 2. Lọc theo TỪ KHÓA (Tên sản phẩm) - Không phân biệt chữ hoa chữ thường
             if (!string.IsNullOrEmpty(keyword))
             {
                 var keywordLower = keyword.ToLower();
                 query = query.Where(p => p.Name.ToLower().Contains(keywordLower));
             }
 
-            // 3. Lọc theo GIÁ TỐI THIỂU (Min Price)
             if (minPrice.HasValue)
             {
                 query = query.Where(p => p.Price >= minPrice.Value);
             }
 
-            // 4. Lọc theo GIÁ TỐI ĐA (Max Price)
             if (maxPrice.HasValue)
             {
                 query = query.Where(p => p.Price <= maxPrice.Value);
             }
 
-            // 5. Sắp xếp sản phẩm mới nhất lên đầu và trả về
             var results = query.OrderByDescending(p => p.Id).ToList();
 
-            // Trả về Json để đồng bộ với các hàm trên
             return Json(results);
+        }
+
+        // =========================================================================
+        // 🌟 ĐÃ THÊM MỚI: API LẤY DANH SÁCH SẢN PHẨM BÁN CHẠY NHẤT (TOP BEST SELLERS)
+        // =========================================================================
+        [AllowAnonymous]
+        [HttpGet("api/products/best-sellers")]
+        public IActionResult GetBestSellers([FromQuery] int limit = 4)
+        {
+            // 1. Nhóm và đếm số lượng bán theo ProductId từ bảng OrderDetails
+            var bestSellerIds = _context.OrderDetails
+                .GroupBy(od => od.ProductId)
+                .Select(g => new
+                {
+                    ProductId = g.Key,
+                    TotalSold = g.Sum(od => od.Quantity)
+                })
+                .OrderByDescending(x => x.TotalSold)
+                .Take(limit)
+                .Select(x => x.ProductId)
+                .ToList();
+
+            // 2. Lấy thông tin chi tiết sản phẩm
+            var products = _context.Products
+                .Where(p => bestSellerIds.Contains(p.Id))
+                .ToList();
+
+            // 3. Sắp xếp lại đúng thứ tự bán nhiều nhất lên đầu
+            var sortedProducts = products
+                .OrderBy(p => bestSellerIds.IndexOf(p.Id))
+                .ToList();
+
+            // 4. Nếu chưa ai mua hàng (Database rỗng), tự động lấy 4 sản phẩm mới nhất làm giả định
+            if (!sortedProducts.Any())
+            {
+                sortedProducts = _context.Products
+                    .OrderByDescending(p => p.Id)
+                    .Take(limit)
+                    .ToList();
+            }
+
+            return Json(sortedProducts);
         }
     }
 }

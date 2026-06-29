@@ -63,7 +63,24 @@ namespace CMS.Backend.Controllers
                     UnitPrice = item.Price
                 };
                 _context.OrderDetails.Add(orderDetail);
+
+                // ========================================================
+                // 🌟 TỰ ĐỘNG TRỪ SỐ LƯỢNG TỒN KHO TRONG DATABASE 🌟
+                // ========================================================
+                var productInDb = _context.Products.Find(item.ProductId);
+                if (productInDb != null)
+                {
+                    // Lấy số lượng kho hiện tại trừ đi số lượng khách vừa mua
+                    productInDb.StockQuantity = productInDb.StockQuantity - item.Quantity;
+
+                    // Cẩn thận: Nếu lỡ trừ mà ra số âm (bán quá tay), set nó về 0 luôn
+                    if (productInDb.StockQuantity < 0)
+                    {
+                        productInDb.StockQuantity = 0;
+                    }
+                }
             }
+            // Lưu lại những thay đổi (cả hóa đơn và số lượng tồn kho mới)
             _context.SaveChanges();
 
             // 🌟 3. GỬI EMAIL KÈM MÃ GIAO DỊCH
@@ -128,7 +145,7 @@ namespace CMS.Backend.Controllers
         }
 
         // ==========================================
-        // 🌟 4. HÀM HỖ TRỢ GỬI EMAIL (ĐÃ THÊM MÃ GIAO DỊCH)
+        // 🌟 4. HÀM HỖ TRỢ GỬI EMAIL 
         // ==========================================
         private async Task SendOrderEmailAsync(string toEmail, string customerName, Order order, List<CartItemRequest> cartItems, string transactionCode, ApplicationDbContext context)
         {
