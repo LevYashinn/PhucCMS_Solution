@@ -118,8 +118,31 @@ namespace CMS.Backend.Controllers
                     address = customer.Address
                 }
             });
-        }
 
+        }
+        // ========================================================
+        // 🚀 API QUÊN MẬT KHẨU (XÁC THỰC EMAIL + SĐT ĐỂ ĐẶT LẠI)
+        // ========================================================
+        [HttpPost("forgot-password")]
+        public IActionResult ForgotPassword([FromBody] ForgotPasswordModel model)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            // 1. Tìm xem có Customer nào khớp cả Email và Số điện thoại không để xác minh chính chủ
+            var customer = _context.Customers
+                .FirstOrDefault(c => c.Email == model.Email && c.Phone == model.Phone);
+
+            if (customer == null)
+            {
+                return BadRequest(new { message = "Email hoặc Số điện thoại không chính xác, vui lòng kiểm tra lại!" });
+            }
+
+            // 2. Nếu khớp thông tin -> Tiến hành đè mật khẩu mới
+            customer.Password = model.NewPassword;
+            _context.SaveChanges(); // Lưu vào SQL Server
+
+            return Ok(new { message = "Đặt lại mật khẩu thành công! Bạn đang được chuyển đến trang đăng nhập..." });
+        }
         // --- CLASS NHẬN DỮ LIỆU CẬP NHẬT TỪ TRÌNH DUYỆT ---
         public class UpdateProfileModel
         {
@@ -129,7 +152,13 @@ namespace CMS.Backend.Controllers
             public string? NewPassword { get; set; } // Có thể đổi mật khẩu hoặc không
         }
     }
-
+    // --- CLASS ĐẠI DIỆN DỮ LIỆU ĐỂ HỨNG TỪ REACT ---
+    public class ForgotPasswordModel
+    {
+        public string Email { get; set; }
+        public string Phone { get; set; }
+        public string NewPassword { get; set; }
+    }
     public class RegisterModel
     {
         public string Name { get; set; }

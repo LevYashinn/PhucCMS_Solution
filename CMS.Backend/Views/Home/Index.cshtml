@@ -15,10 +15,15 @@
 
     <nav class="navbar navbar-expand-lg navbar-dark bg-danger shadow-sm">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="/">PhucCMS</a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link active" href="/">Trang chủ</a>
-                <a class="nav-link" href="/Post/Index">Vào trang Admin</a>
+            <a class="navbar-brand fw-bold" href="/">PhucCMS Backend</a>
+            <div class="navbar-nav ms-auto align-items-center">
+
+                <a class="nav-link fw-bold text-warning me-4" href="http://localhost:3000" target="_blank" title="Mở trang web của khách hàng">
+                    <i class="bi bi-globe"></i> Xem Website
+                </a>
+
+                <a class="nav-link active" href="/">Trang chủ Admin</a>
+                <a class="nav-link" href="/Post/Index">Quản lý Tin Tức</a>
             </div>
         </div>
     </nav>
@@ -37,7 +42,10 @@
                                 <span class="badge bg-primary mb-2 align-self-start">@item.Category?.Name</span>
                                 <h5 class="card-title fw-bold text-dark">@item.Title</h5>
                                 <p class="card-text text-muted text-truncate">@item.Content</p>
-                                <a href="/Post/Details/@item.Id" class="btn btn-outline-danger btn-sm mt-auto align-self-start">Đọc tiếp</a>
+
+                                <a href="http://localhost:3000/blog/@item.Id" target="_blank" class="btn btn-outline-danger btn-sm mt-auto align-self-start">
+                                    Đọc tiếp trên Website
+                                </a>
                             </div>
                         </div>
                     </div>

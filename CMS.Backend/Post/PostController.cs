@@ -63,11 +63,19 @@ namespace CMS.Backend.Controllers
             return View();
         }
 
-        // POST: Xử lý Thêm mới
+        // ===============================================
+        // POST: Xử lý Thêm mới (ĐÃ FIX LỖI KHÔNG LƯU)
+        // ===============================================
         [HttpPost]
         public IActionResult Create(Post model, IFormFile uploadImage)
         {
-            ModelState.Remove("Category"); // Bỏ qua validate khóa ngoại
+            // 🌟 CÁC DÒNG QUAN TRỌNG ĐỂ VƯỢ QUA KIỂM DUYỆT ẢNH CỦA C#
+            ModelState.Remove("Category");
+            ModelState.Remove("ImageUrl");
+            ModelState.Remove("uploadImage");
+
+            // 🌟 Tự động gán ngày tạo là ngày hôm nay
+            model.CreatedDate = DateTime.Now;
 
             if (ModelState.IsValid)
             {
@@ -91,6 +99,7 @@ namespace CMS.Backend.Controllers
                 _context.SaveChanges();
                 return RedirectToAction("Index");
             }
+
             ViewBag.CategoryList = new SelectList(_context.Categories, "Id", "Name", model.CategoryId);
             return View(model);
         }
@@ -106,11 +115,15 @@ namespace CMS.Backend.Controllers
             return View(post);
         }
 
-        // POST: Xử lý Cập nhật
+        // ===============================================
+        // POST: Xử lý Cập nhật (ĐÃ FIX LỖI KHÔNG LƯU)
+        // ===============================================
         [HttpPost]
         public IActionResult Edit(Post model, IFormFile? uploadImage)
         {
+            // 🌟 CÁC DÒNG QUAN TRỌNG ĐỂ VƯỢ QUA KIỂM DUYỆT
             ModelState.Remove("Category");
+            ModelState.Remove("ImageUrl");
             ModelState.Remove("uploadImage");
 
             if (ModelState.IsValid)

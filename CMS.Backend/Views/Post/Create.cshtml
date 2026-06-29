@@ -1,58 +1,54 @@
 ﻿@model CMS.Data.Entities.Post
-
 @{
     Layout = "_LayoutAdmin";
-    ViewData["Title"] = "Thêm bài viết mới";
 }
 
-<div class="container mt-4">
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <h4 class="mb-0"><i class="bi bi-file-earmark-plus"></i> THÊM BÀI VIẾT MỚI</h4>
+<div class="container mt-4 px-4" style="max-width: 800px;">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white py-3">
+            <h4 class="mb-0 fw-bold"><i class="bi bi-pencil-square"></i> THÊM BÀI VIẾT MỚI</h4>
         </div>
-        <div class="card-body">
-            <form asp-action="Create" method="post">
-                <div class="row">
-                    <div class="col-md-8">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Tiêu đề bài viết:</label>
-                            <input asp-for="Title" class="form-control" placeholder="Nhập tiêu đề..." />
-                        </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Nội dung chi tiết:</label>
-                            <textarea asp-for="Content" class="form-control" rows="10" placeholder="Viết nội dung tại đây..."></textarea>
-                        </div>
+        <div class="card-body p-4">
+            <form action="/Post/Create" method="post" enctype="multipart/form-data">
+
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label fw-bold text-secondary">Tiêu đề bài viết</label>
+                    <input asp-for="Title" class="form-control" required placeholder="Nhập tiêu đề..." />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label asp-for="CategoryId" class="form-label fw-bold text-secondary">Danh mục tin tức</label>
+                    <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryList" required>
+                        <option value="">-- Vui lòng chọn danh mục --</option>
+                    </select>
+                    <span asp-validation-for="CategoryId" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-4 bg-light p-3 rounded-3 border">
+                    <label class="form-label fw-bold text-secondary">Hình ảnh đại diện (Thumbnail)</label>
+                    <input type="file" id="imageInput" name="uploadImage" class="form-control mb-2" accept="image/*" required onchange="previewImage(event)" />
+                    <small class="text-muted d-block mb-3">Vui lòng chọn ảnh định dạng .jpg, .png, .webp...</small>
+
+                    <div class="text-center">
+                        <img id="imagePreview" src="#" alt="Xem trước ảnh" class="img-thumbnail d-none shadow-sm" style="max-height: 250px; object-fit: contain;" />
                     </div>
+                </div>
 
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Chuyên mục:</label>
-                            <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryList">
-                                <option value="">-- Chọn danh mục --</option>
-                            </select>
-                        </div>
+                <div class="mb-4">
+                    <label asp-for="Content" class="form-label fw-bold text-secondary">Nội dung bài viết</label>
+                    <textarea asp-for="Content" class="form-control" rows="8" placeholder="Nhập nội dung chi tiết..."></textarea>
+                    <span asp-validation-for="Content" class="text-danger small"></span>
+                </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Link ảnh đại diện (URL):</label>
-                            <input asp-for="ImageUrl" class="form-control" placeholder="https://..." />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Ngày đăng:</label>
-                            <input asp-for="CreatedDate" type="date" class="form-control" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
-                        </div>
-
-                        <hr />
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-success">
-                                <i class="bi bi-cloud-arrow-up"></i> Lưu và Đăng bài
-                            </button>
-                            <a asp-action="Index" class="btn btn-secondary">
-                                <i class="bi bi-arrow-left"></i> Quay lại danh sách
-                            </a>
-                        </div>
-                    </div>
+                <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                    <a href="/Post/Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Quay lại
+                    </a>
+                    <button type="submit" class="btn btn-primary fw-bold px-4 shadow-sm">
+                        <i class="bi bi-plus-circle"></i> Đăng bài
+                    </button>
                 </div>
             </form>
         </div>
@@ -60,14 +56,24 @@
 </div>
 
 @section Scripts {
-    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
-
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
     <script>
-        // Kích hoạt trình soạn thảo giàu tính năng (bôi đậm, in nghiêng, list...) cho thẻ textarea #Content
-                ClassicEditor
-                    .create(document.querySelector('#Content'))
-                    .catch(error => {
-                        console.error(error);
-                    });
+        function previewImage(event) {
+            const input = event.target;
+            const preview = document.getElementById('imagePreview');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.classList.remove('d-none');
+                }
+                reader.readAsDataURL(input.files[0]);
+            } else {
+                preview.src = '#';
+                preview.classList.add('d-none');
+            }
+        }
     </script>
 }
