@@ -76,6 +76,58 @@ namespace CMS.Backend.Controllers
                 }
             });
         }
+        // ==========================================
+        // 🚀 API CẬP NHẬT THÔNG TIN HỒ SƠ (PROFILE)
+        // ==========================================
+        [HttpPut("update-profile/{id}")]
+        public IActionResult UpdateProfile(int id, [FromBody] UpdateProfileModel model)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            // 1. Tìm khách hàng trong DB theo ID
+            var customer = _context.Customers.FirstOrDefault(c => c.Id == id);
+            if (customer == null)
+            {
+                return NotFound(new { message = "Không tìm thấy thông tin tài khoản!" });
+            }
+
+            // 2. Cập nhật các trường thông tin mới
+            customer.FullName = model.Name;
+            customer.Phone = model.Phone;
+            customer.Address = model.Address ?? "";
+
+            // Nếu người dùng có nhập mật khẩu mới thì mới cập nhật mật khẩu
+            if (!string.IsNullOrEmpty(model.NewPassword))
+            {
+                customer.Password = model.NewPassword;
+            }
+
+            // 3. Lưu thay đổi vào Database
+            _context.SaveChanges();
+
+            // 4. Trả về thông tin mới để React cập nhật lại localStorage
+            return Ok(new
+            {
+                message = "Cập nhật hồ sơ thành công!",
+                user = new
+                {
+                    id = customer.Id,
+                    name = customer.FullName,
+                    email = customer.Email,
+                    phone = customer.Phone,
+                    address = customer.Address
+                }
+            });
+        }
+
+        // --- CLASS NHẬN DỮ LIỆU CẬP NHẬT TỪ TRÌNH DUYỆT ---
+        public class UpdateProfileModel
+        {
+            public string Name { get; set; }
+            public string Phone { get; set; }
+            public string? Address { get; set; }
+            public string? NewPassword { get; set; } // Có thể đổi mật khẩu hoặc không
+        }
     }
 
     public class RegisterModel

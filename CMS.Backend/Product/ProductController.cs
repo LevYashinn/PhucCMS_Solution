@@ -201,5 +201,39 @@ namespace CMS.Backend.Controllers
             var categories = _context.CategoryProducts.ToList();
             return Json(categories);
         }
+
+        // 🌟 THÊM MỚI: API TÌM KIẾM THỜI GIAN THỰC & LỌC THEO GIÁ 🌟
+        [AllowAnonymous]
+        [HttpGet("api/products/search")]
+        public IActionResult SearchProducts([FromQuery] string? keyword, [FromQuery] decimal? minPrice, [FromQuery] decimal? maxPrice)
+        {
+            // 1. Lấy toàn bộ sản phẩm ra làm gốc
+            var query = _context.Products.AsQueryable();
+
+            // 2. Lọc theo TỪ KHÓA (Tên sản phẩm) - Không phân biệt chữ hoa chữ thường
+            if (!string.IsNullOrEmpty(keyword))
+            {
+                var keywordLower = keyword.ToLower();
+                query = query.Where(p => p.Name.ToLower().Contains(keywordLower));
+            }
+
+            // 3. Lọc theo GIÁ TỐI THIỂU (Min Price)
+            if (minPrice.HasValue)
+            {
+                query = query.Where(p => p.Price >= minPrice.Value);
+            }
+
+            // 4. Lọc theo GIÁ TỐI ĐA (Max Price)
+            if (maxPrice.HasValue)
+            {
+                query = query.Where(p => p.Price <= maxPrice.Value);
+            }
+
+            // 5. Sắp xếp sản phẩm mới nhất lên đầu và trả về
+            var results = query.OrderByDescending(p => p.Id).ToList();
+
+            // Trả về Json để đồng bộ với các hàm trên
+            return Json(results);
+        }
     }
 }
