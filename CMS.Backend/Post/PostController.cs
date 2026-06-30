@@ -16,30 +16,26 @@ namespace CMS.Backend.Controllers
     {
         private readonly ApplicationDbContext _context;
 
-        // Inject DbContext
         public PostController(ApplicationDbContext context)
         {
             _context = context;
         }
 
-        // Hiển thị danh sách bài viết từ SQL Server
+        // 1. Hiển thị danh sách bài viết từ SQL Server
         public IActionResult Index(int? id)
         {
             var query = _context.Posts.Include(p => p.Category).AsQueryable();
 
-            // Nếu người dùng CÓ truyền id -> lọc theo Danh mục
             if (id != null)
             {
                 query = query.Where(p => p.CategoryId == id);
             }
 
-            // Sắp xếp theo ngày mới nhất và chuyển thành List
             var posts = query.OrderByDescending(p => p.CreatedDate).ToList();
-
             return View(posts);
         }
 
-        // Chi tiết bài viết
+        // 2. Chi tiết bài viết
         [AllowAnonymous]
         public IActionResult Details(int id)
         {
@@ -47,15 +43,12 @@ namespace CMS.Backend.Controllers
                 .Include(p => p.Category)
                 .FirstOrDefault(p => p.Id == id);
 
-            if (post == null)
-            {
-                return NotFound();
-            }
+            if (post == null) return NotFound();
 
             return View(post);
         }
 
-        // GET: Giao diện Thêm mới
+        // 3. GET: Giao diện Thêm mới
         [HttpGet]
         public IActionResult Create()
         {
@@ -63,18 +56,17 @@ namespace CMS.Backend.Controllers
             return View();
         }
 
-        // ===============================================
-        // POST: Xử lý Thêm mới (ĐÃ FIX LỖI KHÔNG LƯU)
-        // ===============================================
+        // 4. POST: Xử lý Thêm mới (ĐÃ ĐỒNG BỘ LOGIC NHƯ PRODUCT)
         [HttpPost]
         public IActionResult Create(Post model, IFormFile uploadImage)
         {
-            // 🌟 CÁC DÒNG QUAN TRỌNG ĐỂ VƯỢ QUA KIỂM DUYỆT ẢNH CỦA C#
             ModelState.Remove("Category");
             ModelState.Remove("ImageUrl");
             ModelState.Remove("uploadImage");
 
-            // 🌟 Tự động gán ngày tạo là ngày hôm nay
+            if (model.CategoryId <= 0) ModelState.AddModelError("CategoryId", "Vui lòng chọn danh mục.");
+
+            // Tự động gán ngày tạo là ngày hôm nay
             model.CreatedDate = DateTime.Now;
 
             if (ModelState.IsValid)
@@ -104,7 +96,7 @@ namespace CMS.Backend.Controllers
             return View(model);
         }
 
-        // GET: Giao diện Cập nhật
+        // 5. GET: Giao diện Cập nhật
         [HttpGet]
         public IActionResult Edit(int id)
         {
@@ -115,19 +107,30 @@ namespace CMS.Backend.Controllers
             return View(post);
         }
 
-        // ===============================================
-        // POST: Xử lý Cập nhật (ĐÃ FIX LỖI KHÔNG LƯU)
-        // ===============================================
+        // 6. POST: Xử lý Cập nhật (ĐÃ ĐỒNG BỘ LOGIC TÌM VÀ MAP DATA NHƯ PRODUCT)
         [HttpPost]
         public IActionResult Edit(Post model, IFormFile? uploadImage)
         {
-            // 🌟 CÁC DÒNG QUAN TRỌNG ĐỂ VƯỢ QUA KIỂM DUYỆT
             ModelState.Remove("Category");
             ModelState.Remove("ImageUrl");
             ModelState.Remove("uploadImage");
 
+            if (model.CategoryId <= 0)
+            {
+                ModelState.AddModelError("CategoryId", "Vui lòng chọn danh mục bài viết.");
+            }
+
             if (ModelState.IsValid)
             {
+                // 🌟 TÌM BÀI VIẾT TRONG DB ĐỂ CẬP NHẬT (GIÚP KHÔNG BỊ MẤT DỮ LIỆU CŨ)
+                var postInDb = _context.Posts.FirstOrDefault(p => p.Id == model.Id);
+                if (postInDb == null) return NotFound();
+
+                postInDb.Title = model.Title;
+                postInDb.CategoryId = model.CategoryId;
+                postInDb.Content = model.Content;
+                // KHÔNG cập nhật CreatedDate để giữ nguyên ngày đăng bài ban đầu
+
                 if (uploadImage != null && uploadImage.Length > 0)
                 {
                     string folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
@@ -141,20 +144,16 @@ namespace CMS.Backend.Controllers
                         uploadImage.CopyTo(stream);
                     }
 
-                    // Nếu có ảnh mới thì lấy link ảnh mới
-                    model.ImageUrl = "/uploads/" + fileName;
-                }
-                else
-                {
-                    // Nếu không upload ảnh mới, giữ lại đường dẫn ảnh cũ
-                    var oldPost = _context.Posts.AsNoTracking().FirstOrDefault(p => p.Id == model.Id);
-                    if (oldPost != null && string.IsNullOrEmpty(model.ImageUrl))
+                    // 🌟 Xóa ảnh cũ đi cho nhẹ Server giống hệt bên Product
+                    if (!string.IsNullOrEmpty(postInDb.ImageUrl))
                     {
-                        model.ImageUrl = oldPost.ImageUrl;
+                        string oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", postInDb.ImageUrl.TrimStart('/'));
+                        if (System.IO.File.Exists(oldFilePath)) System.IO.File.Delete(oldFilePath);
                     }
+
+                    postInDb.ImageUrl = "/uploads/" + fileName;
                 }
 
-                _context.Posts.Update(model);
                 _context.SaveChanges();
                 return RedirectToAction("Index");
             }
@@ -163,13 +162,13 @@ namespace CMS.Backend.Controllers
             return View(model);
         }
 
-        // POST/GET: Thực thi Xóa
+        // 7. POST/GET: Thực thi Xóa
         public IActionResult Delete(int id)
         {
             var post = _context.Posts.Find(id);
             if (post != null)
             {
-                // Xóa luôn hình ảnh vật lý trong thư mục uploads để đỡ nặng máy chủ
+                // Xóa luôn hình ảnh vật lý trong thư mục uploads
                 if (!string.IsNullOrEmpty(post.ImageUrl))
                 {
                     string oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", post.ImageUrl.TrimStart('/'));
@@ -191,6 +190,35 @@ namespace CMS.Backend.Controllers
         {
             var posts = _context.Posts.OrderByDescending(p => p.CreatedDate).ToList();
             return Json(posts);
+        }
+
+        // =========================================================================
+        // 🌟 API HỖ TRỢ UPLOAD ẢNH TỪ BÊN TRONG KHUNG SOẠN THẢO CKEDITOR
+        // =========================================================================
+        [HttpPost]
+        public IActionResult UploadImageEditor(IFormFile upload)
+        {
+            if (upload != null && upload.Length > 0)
+            {
+                // Lưu ảnh vào thư mục wwwroot/uploads
+                string folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+                if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+
+                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(upload.FileName);
+                string filePath = Path.Combine(folder, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    upload.CopyTo(stream);
+                }
+
+                string url = $"/uploads/{fileName}";
+
+                // Trả về JSON theo đúng chuẩn mà thư viện CKEditor yêu cầu
+                return Json(new { uploaded = 1, fileName = fileName, url = url });
+            }
+
+            return Json(new { uploaded = 0, error = new { message = "Lỗi: Không thể tải ảnh lên máy chủ!" } });
         }
     }
 }

@@ -3,7 +3,7 @@
     Layout = "_LayoutAdmin";
 }
 
-<div class="container mt-4 px-4" style="max-width: 800px;">
+<div class="container mt-4 px-4" style="max-width: 900px;">
     <div class="card shadow-sm border-0">
         <div class="card-header bg-primary text-white py-3">
             <h4 class="mb-0 fw-bold"><i class="bi bi-pencil-square"></i> THÊM BÀI VIẾT MỚI</h4>
@@ -14,7 +14,7 @@
 
                 <div class="mb-3">
                     <label asp-for="Title" class="form-label fw-bold text-secondary">Tiêu đề bài viết</label>
-                    <input asp-for="Title" class="form-control" required placeholder="Nhập tiêu đề..." />
+                    <input asp-for="Title" class="form-control" required placeholder="Nhập tiêu đề bài viết..." />
                     <span asp-validation-for="Title" class="text-danger small"></span>
                 </div>
 
@@ -27,27 +27,26 @@
                 </div>
 
                 <div class="mb-4 bg-light p-3 rounded-3 border">
-                    <label class="form-label fw-bold text-secondary">Hình ảnh đại diện (Thumbnail)</label>
-                    <input type="file" id="imageInput" name="uploadImage" class="form-control mb-2" accept="image/*" required onchange="previewImage(event)" />
-                    <small class="text-muted d-block mb-3">Vui lòng chọn ảnh định dạng .jpg, .png, .webp...</small>
-
-                    <div class="text-center">
-                        <img id="imagePreview" src="#" alt="Xem trước ảnh" class="img-thumbnail d-none shadow-sm" style="max-height: 250px; object-fit: contain;" />
+                    <label class="form-label fw-bold text-secondary">Hình ảnh đại diện bài viết (Thumbnail)</label>
+                    <input type="file" name="uploadImage" class="form-control mb-2" accept="image/*" required onchange="previewImage(event)" />
+                    <small class="text-muted d-block mb-2">Vui lòng chọn ảnh định dạng .jpg, .png, .webp...</small>
+                    <div class="text-center mt-3">
+                        <img id="imagePreview" src="#" alt="Xem trước" class="img-thumbnail d-none shadow-sm" style="max-height: 250px; object-fit: contain;" />
                     </div>
                 </div>
 
                 <div class="mb-4">
                     <label asp-for="Content" class="form-label fw-bold text-secondary">Nội dung bài viết</label>
-                    <textarea asp-for="Content" class="form-control" rows="8" placeholder="Nhập nội dung chi tiết..."></textarea>
+                    <textarea asp-for="Content" id="editor" class="form-control" placeholder="Viết nội dung tại đây..."></textarea>
                     <span asp-validation-for="Content" class="text-danger small"></span>
                 </div>
 
-                <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                <div class="d-flex justify-content-between pt-3 border-top">
                     <a href="/Post/Index" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Quay lại
+                        <i class="bi bi-arrow-left"></i> Quay lại danh sách
                     </a>
                     <button type="submit" class="btn btn-primary fw-bold px-4 shadow-sm">
-                        <i class="bi bi-plus-circle"></i> Đăng bài
+                        <i class="bi bi-plus-circle"></i> Đăng bài viết
                     </button>
                 </div>
             </form>
@@ -59,6 +58,7 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
     <script>
         function previewImage(event) {
             const input = event.target;
@@ -75,5 +75,27 @@
                 preview.classList.add('d-none');
             }
         }
+    </script>
+
+    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+    <script>
+        ClassicEditor
+            .create(document.querySelector('#editor'), {
+                ckfinder: {
+                    // Cấu hình đường dẫn upload ảnh trực tiếp về C# Backend
+                    uploadUrl: '/Post/UploadImageEditor'
+                }
+            })
+            .then(editor => {
+                console.log('Khởi tạo CKEditor Thêm bài viết thành công!');
+            })
+            .catch(error => {
+                console.error('Lỗi khi tải CKEditor:', error);
+            });
+
+        // Tạo style tùy biến độ cao vùng viết chữ
+        const style = document.createElement('style');
+        style.innerHTML = '.ck-editor__editable_inline { min-height: 400px; }';
+        document.head.appendChild(style);
     </script>
 }

@@ -113,6 +113,21 @@ namespace CMS.Controllers
             return View(categoryProduct); // Nếu có lỗi nhập liệu thì hiển thị lại form
         }
 
+        // ==========================================
+        // 🌟 ĐÃ THÊM MỚI: CHỨC NĂNG XÓA (DELETE)
+        // ==========================================
+        public async Task<IActionResult> Delete(int id)
+        {
+            var categoryProduct = await _context.CategoryProducts.FindAsync(id);
+            if (categoryProduct != null)
+            {
+                _context.CategoryProducts.Remove(categoryProduct);
+                await _context.SaveChangesAsync();
+            }
+            // Xóa xong tự động quay về trang danh sách (Index)
+            return RedirectToAction(nameof(Index));
+        }
+
         // Hàm hỗ trợ kiểm tra xem danh mục có tồn tại hay không
         private bool CategoryProductExists(int id)
         {

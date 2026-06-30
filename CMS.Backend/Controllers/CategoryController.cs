@@ -1,25 +1,29 @@
 ﻿using CMS.Data;
 using CMS.Data.Entities;
-using Microsoft.AspNetCore.Authorization; // THÊM MỚI: Thư viện phân quyền
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace CMS.Backend.Controllers
 {
-    [Authorize] // THÊM MỚI: Bắt buộc đăng nhập mới được vào toàn bộ các hàm bên dưới
+    [Authorize]
     public class CategoryController : Controller
     {
         private readonly ApplicationDbContext _context;
 
-        // "Tiêm" kết nối vào Controller
         public CategoryController(ApplicationDbContext context)
         {
             _context = context;
         }
 
-        public IActionResult Index()
+        // ==========================================
+        // 1. GIAO DIỆN QUẢN TRỊ (ADMIN)
+        // ==========================================
+        public async Task<IActionResult> Index()
         {
-            var data = _context.Categories.ToList();
+            var data = await _context.Categories.OrderByDescending(c => c.Id).ToListAsync();
             return View(data);
         }
 
@@ -29,39 +33,80 @@ namespace CMS.Backend.Controllers
             return View();
         }
 
+        // 🌟 ĐÃ SỬA: Dùng [Bind] để chặn lỗi kiểm duyệt ngầm của C#
         [HttpPost]
-        public IActionResult Create(Category model)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create([Bind("Id,Name,Description")] Category model)
         {
-            _context.Categories.Add(model);
-            _context.SaveChanges();
-            return RedirectToAction("Index");
-        }
+            // Xóa bỏ xác thực khóa ngoại để tránh lỗi ngầm
+            ModelState.Remove("Posts");
 
-        public IActionResult Delete(int id)
-        {
-            var category = _context.Categories.Find(id);
-            if (category != null)
+            if (ModelState.IsValid)
             {
-                _context.Categories.Remove(category);
-                _context.SaveChanges();
+                _context.Categories.Add(model);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction("Index");
+            return View(model);
         }
 
         [HttpGet]
-        public IActionResult Edit(int id)
+        public async Task<IActionResult> Edit(int? id)
         {
-            var category = _context.Categories.Find(id);
+            if (id == null) return NotFound();
+            var category = await _context.Categories.FindAsync(id);
             if (category == null) return NotFound();
             return View(category);
         }
 
+        // 🌟 ĐÃ SỬA: Dùng [Bind] để chặn lỗi kiểm duyệt ngầm của C#
         [HttpPost]
-        public IActionResult Edit(Category model)
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Description")] Category model)
         {
-            _context.Categories.Update(model);
-            _context.SaveChanges();
-            return RedirectToAction("Index");
+            if (id != model.Id) return NotFound();
+
+            ModelState.Remove("Posts");
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    _context.Update(model);
+                    await _context.SaveChangesAsync();
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!_context.Categories.Any(e => e.Id == model.Id))
+                        return NotFound();
+                    else
+                        throw;
+                }
+                return RedirectToAction(nameof(Index));
+            }
+            return View(model);
+        }
+
+        public async Task<IActionResult> Delete(int id)
+        {
+            var category = await _context.Categories.FindAsync(id);
+            if (category != null)
+            {
+                _context.Categories.Remove(category);
+                await _context.SaveChangesAsync();
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        // =========================================================================
+        // 🚀 2. API CUNG CẤP DỮ LIỆU CHO BÊN REACT (FRONTEND)
+        // =========================================================================
+        [AllowAnonymous]
+        [HttpGet("api/post-categories")]
+        public async Task<IActionResult> GetPostCategoriesForReact()
+        {
+            var categories = await _context.Categories.OrderByDescending(c => c.Id).ToListAsync();
+            return Json(categories);
         }
     }
 }

@@ -3,10 +3,10 @@
     Layout = "_LayoutAdmin";
 }
 
-<div class="container mt-4 px-4" style="max-width: 800px;">
+<div class="container mt-4 px-4" style="max-width: 900px;">
     <div class="card shadow-sm border-0">
         <div class="card-header bg-warning text-dark py-3">
-            <h4 class="mb-0 fw-bold"><i class="bi bi-pencil-square"></i> SỬA BÀI VIẾT (TIN TỨC)</h4>
+            <h4 class="mb-0 fw-bold"><i class="bi bi-pencil-square"></i> CHỈNH SỬA BÀI VIẾT</h4>
         </div>
 
         <div class="card-body p-4">
@@ -17,12 +17,12 @@
 
                 <div class="mb-3">
                     <label asp-for="Title" class="form-label fw-bold text-secondary">Tiêu đề bài viết</label>
-                    <input asp-for="Title" class="form-control" required placeholder="Nhập tiêu đề..." />
+                    <input asp-for="Title" class="form-control" required placeholder="Nhập tiêu đề bài viết..." />
                     <span asp-validation-for="Title" class="text-danger small"></span>
                 </div>
 
                 <div class="mb-3">
-                    <label asp-for="CategoryId" class="form-label fw-bold text-secondary">Danh mục</label>
+                    <label asp-for="CategoryId" class="form-label fw-bold text-secondary">Danh mục tin tức</label>
                     <select asp-for="CategoryId" class="form-select" asp-items="ViewBag.CategoryList" required>
                         <option value="">-- Vui lòng chọn danh mục --</option>
                     </select>
@@ -30,27 +30,25 @@
                 </div>
 
                 <div class="mb-4 bg-light p-3 rounded-3 border">
-                    <label class="form-label fw-bold text-secondary">Đổi hình đại diện (Bỏ trống nếu muốn giữ nguyên ảnh cũ)</label>
-
-                    <input type="file" id="imageInput" name="uploadImage" class="form-control mb-2" accept="image/*" onchange="previewImage(event)" />
-
+                    <label class="form-label fw-bold text-secondary">Thay đổi hình ảnh đại diện (Bỏ trống nếu giữ nguyên)</label>
+                    <input type="file" name="uploadImage" class="form-control mb-2" accept="image/*" onchange="previewImage(event)" />
                     <div class="text-center mt-3">
                         <p class="small text-muted mb-1">Ảnh hiển thị hiện tại:</p>
-                        <img id="imagePreview" src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "https://placehold.co/600x400?text=No+Image" : Model.ImageUrl)" alt="Xem trước ảnh" class="img-thumbnail shadow-sm" style="max-height: 250px; object-fit: contain;" />
+                        <img id="imagePreview" src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "https://placehold.co/600x400?text=No+Image" : Model.ImageUrl)" alt="Xem trước" class="img-thumbnail shadow-sm" style="max-height: 250px; object-fit: contain;" />
                     </div>
                 </div>
 
                 <div class="mb-4">
                     <label asp-for="Content" class="form-label fw-bold text-secondary">Nội dung bài viết</label>
-                    <textarea asp-for="Content" class="form-control" rows="8" placeholder="Nhập nội dung..."></textarea>
+                    <textarea asp-for="Content" id="editor" class="form-control"></textarea>
                     <span asp-validation-for="Content" class="text-danger small"></span>
                 </div>
 
-                <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                <div class="d-flex justify-content-between pt-3 border-top">
                     <a href="/Post/Index" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left"></i> Quay lại
+                        <i class="bi bi-arrow-left"></i> Hủy thay đổi
                     </a>
-                    <button type="submit" class="btn btn-warning fw-bold px-4 shadow-sm text-dark">
+                    <button type="submit" class="btn btn-warning fw-bold px-4 text-dark shadow-sm">
                         <i class="bi bi-save"></i> Lưu thay đổi
                     </button>
                 </div>
@@ -63,11 +61,11 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+
     <script>
         function previewImage(event) {
             const input = event.target;
             const preview = document.getElementById('imagePreview');
-            // Nếu khách chọn file mới, đổi lại hình hiển thị
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -76,5 +74,27 @@
                 reader.readAsDataURL(input.files[0]);
             }
         }
+    </script>
+
+    <script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+    <script>
+        ClassicEditor
+            .create(document.querySelector('#editor'), {
+                ckfinder: {
+                    // Cấu hình đường dẫn upload ảnh trực tiếp về C# Backend
+                    uploadUrl: '/Post/UploadImageEditor'
+                }
+            })
+            .then(editor => {
+                console.log('Khởi tạo CKEditor Sửa bài viết thành công!');
+            })
+            .catch(error => {
+                console.error('Lỗi khi tải CKEditor:', error);
+            });
+
+        // Tạo style tùy biến độ cao vùng viết chữ
+        const style = document.createElement('style');
+        style.innerHTML = '.ck-editor__editable_inline { min-height: 400px; }';
+        document.head.appendChild(style);
     </script>
 }
