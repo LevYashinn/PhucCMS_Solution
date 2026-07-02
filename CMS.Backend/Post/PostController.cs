@@ -8,10 +8,13 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Mail;
+using System.Threading.Tasks;
 
 namespace CMS.Backend.Controllers
 {
-    [Authorize] // Bắt buộc phải đăng nhập mới được vào các hàm bên dưới
+    [Authorize] // Bắt buộc phải đăng nhập mới được vào các hàm quản trị bên dưới
     public class PostController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -21,7 +24,7 @@ namespace CMS.Backend.Controllers
             _context = context;
         }
 
-        // 1. Hiển thị danh sách bài viết từ SQL Server
+        // 1. Hiển thị danh sách bài viết từ SQL Server (Admin)
         public IActionResult Index(int? id)
         {
             var query = _context.Posts.Include(p => p.Category).AsQueryable();
@@ -35,7 +38,7 @@ namespace CMS.Backend.Controllers
             return View(posts);
         }
 
-        // 2. Chi tiết bài viết
+        // 2. Chi tiết bài viết (Admin/Khách)
         [AllowAnonymous]
         public IActionResult Details(int id)
         {
@@ -48,7 +51,7 @@ namespace CMS.Backend.Controllers
             return View(post);
         }
 
-        // 3. GET: Giao diện Thêm mới
+        // 3. GET: Giao diện Thêm mới (Admin)
         [HttpGet]
         public IActionResult Create()
         {
@@ -56,7 +59,7 @@ namespace CMS.Backend.Controllers
             return View();
         }
 
-        // 4. POST: Xử lý Thêm mới (ĐÃ ĐỒNG BỘ LOGIC NHƯ PRODUCT)
+        // 4. POST: Xử lý Thêm mới bài viết
         [HttpPost]
         public IActionResult Create(Post model, IFormFile uploadImage)
         {
@@ -96,7 +99,7 @@ namespace CMS.Backend.Controllers
             return View(model);
         }
 
-        // 5. GET: Giao diện Cập nhật
+        // 5. GET: Giao diện Cập nhật (Admin)
         [HttpGet]
         public IActionResult Edit(int id)
         {
@@ -107,7 +110,7 @@ namespace CMS.Backend.Controllers
             return View(post);
         }
 
-        // 6. POST: Xử lý Cập nhật (ĐÃ ĐỒNG BỘ LOGIC TÌM VÀ MAP DATA NHƯ PRODUCT)
+        // 6. POST: Xử lý Cập nhật bài viết
         [HttpPost]
         public IActionResult Edit(Post model, IFormFile? uploadImage)
         {
@@ -122,14 +125,12 @@ namespace CMS.Backend.Controllers
 
             if (ModelState.IsValid)
             {
-                // 🌟 TÌM BÀI VIẾT TRONG DB ĐỂ CẬP NHẬT (GIÚP KHÔNG BỊ MẤT DỮ LIỆU CŨ)
                 var postInDb = _context.Posts.FirstOrDefault(p => p.Id == model.Id);
                 if (postInDb == null) return NotFound();
 
                 postInDb.Title = model.Title;
                 postInDb.CategoryId = model.CategoryId;
                 postInDb.Content = model.Content;
-                // KHÔNG cập nhật CreatedDate để giữ nguyên ngày đăng bài ban đầu
 
                 if (uploadImage != null && uploadImage.Length > 0)
                 {
@@ -144,7 +145,7 @@ namespace CMS.Backend.Controllers
                         uploadImage.CopyTo(stream);
                     }
 
-                    // 🌟 Xóa ảnh cũ đi cho nhẹ Server giống hệt bên Product
+                    // Xóa ảnh cũ cho nhẹ Server
                     if (!string.IsNullOrEmpty(postInDb.ImageUrl))
                     {
                         string oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", postInDb.ImageUrl.TrimStart('/'));
@@ -162,13 +163,12 @@ namespace CMS.Backend.Controllers
             return View(model);
         }
 
-        // 7. POST/GET: Thực thi Xóa
+        // 7. POST/GET: Thực thi Xóa bài viết
         public IActionResult Delete(int id)
         {
             var post = _context.Posts.Find(id);
             if (post != null)
             {
-                // Xóa luôn hình ảnh vật lý trong thư mục uploads
                 if (!string.IsNullOrEmpty(post.ImageUrl))
                 {
                     string oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", post.ImageUrl.TrimStart('/'));
@@ -182,14 +182,50 @@ namespace CMS.Backend.Controllers
         }
 
         // =========================================================================
-        // 🚀 CỬA PHỤ CHO REACT: LẤY BÀI VIẾT (Vượt mặt [Authorize] ở trên cùng)
+        // 🚀 CỬA PHỤ CHO REACT: LẤY BÀI VIẾT (ĐÃ FIX LỖI 500 SERVER)
         // =========================================================================
         [AllowAnonymous]
         [HttpGet("api/get-posts")]
         public IActionResult GetPostsForReact()
         {
-            var posts = _context.Posts.OrderByDescending(p => p.CreatedDate).ToList();
+            // 🌟 FIX: Gọi .ToList() trước để kéo dữ liệu từ SQL lên RAM an toàn
+            var rawPosts = _context.Posts
+                .Include(p => p.Category)
+                .OrderByDescending(p => p.CreatedDate)
+                .ToList();
+
+            // 🌟 Sau đó mới dùng C# đóng gói (DTO) và định dạng ngày tháng
+            var posts = rawPosts.Select(p => new
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Content = p.Content,
+                ImageUrl = p.ImageUrl,
+                CreatedDate = p.CreatedDate.ToString("dd/MM/yyyy HH:mm"),
+                CategoryId = p.CategoryId,
+                CategoryName = p.Category != null ? p.Category.Name : "Không phân loại"
+            });
+
             return Json(posts);
+        }
+
+        // =========================================================================
+        // 🚀 CỬA PHỤ CHO REACT: LẤY DANH MỤC BÀI VIẾT (ĐÃ FIX LỖI 500 SERVER)
+        // =========================================================================
+        [AllowAnonymous]
+        [HttpGet("api/get-post-categories")]
+        public IActionResult GetPostCategoriesForReact()
+        {
+            var categories = _context.Categories
+                .OrderByDescending(c => c.Id)
+                .ToList() // 🌟 FIX: Kéo thẳng lên RAM cho an toàn trước
+                .Select(c => new
+                {
+                    Id = c.Id,
+                    Name = c.Name
+                });
+
+            return Json(categories);
         }
 
         // =========================================================================
@@ -200,7 +236,6 @@ namespace CMS.Backend.Controllers
         {
             if (upload != null && upload.Length > 0)
             {
-                // Lưu ảnh vào thư mục wwwroot/uploads
                 string folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
                 if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
 
@@ -214,11 +249,100 @@ namespace CMS.Backend.Controllers
 
                 string url = $"/uploads/{fileName}";
 
-                // Trả về JSON theo đúng chuẩn mà thư viện CKEditor yêu cầu
                 return Json(new { uploaded = 1, fileName = fileName, url = url });
             }
 
             return Json(new { uploaded = 0, error = new { message = "Lỗi: Không thể tải ảnh lên máy chủ!" } });
         }
+
+        // =========================================================================
+        // 🌟 API: TIẾP NHẬN FORM LIÊN HỆ VÀ TỰ ĐỘNG GỬI EMAIL VỀ CHO ADMIN
+        // =========================================================================
+        [AllowAnonymous]
+        [HttpPost("api/contact/send-message")]
+        public async Task<IActionResult> ReceiveContactMessage([FromBody] ContactRequest request)
+        {
+            if (request == null || string.IsNullOrEmpty(request.Name) || string.IsNullOrEmpty(request.Email))
+            {
+                return BadRequest(new { message = "Vui lòng điền đầy đủ các thông tin bắt buộc!" });
+            }
+
+            try
+            {
+                string fromEmail = "phuc512dz@gmail.com";
+                string appPassword = "zbkwoezmagdmxmcg";
+
+                var smtpClient = new SmtpClient("smtp.gmail.com")
+                {
+                    Port = 587,
+                    Credentials = new NetworkCredential(fromEmail, appPassword),
+                    EnableSsl = true,
+                };
+
+                string body = $@"
+                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);'>
+                        <div style='background-color: #212529; padding: 20px; text-align: center; color: white;'>
+                            <h2 style='margin: 0; text-transform: uppercase; letter-spacing: 1px;'>Khách Hàng Liên Hệ Mới</h2>
+                        </div>
+                        <div style='padding: 25px; bg-color: #ffffff;'>
+                            <p style='font-size: 15px; color: #333;'>Hệ thống <strong>Trạm Giày Sneaker</strong> vừa ghi nhận một lời nhắn mới từ khách hàng qua biểu mẫu liên hệ trực tuyến:</p>
+                            
+                            <table style='width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 20px;'>
+                                <tr style='background-color: #f8f9fa;'>
+                                    <td style='padding: 12px; border: 1px solid #eee; font-weight: bold; width: 30%; color: #555;'>Họ và tên:</td>
+                                    <td style='padding: 12px; border: 1px solid #eee; color: #212529;'>{request.Name}</td>
+                                </tr>
+                                <tr>
+                                    <td style='padding: 12px; border: 1px solid #eee; font-weight: bold; color: #555;'>Số điện thoại:</td>
+                                    <td style='padding: 12px; border: 1px solid #eee; color: #212529;'>{request.Phone}</td>
+                                </tr>
+                                <tr style='background-color: #f8f9fa;'>
+                                    <td style='padding: 12px; border: 1px solid #eee; font-weight: bold; color: #555;'>Địa chỉ Email:</td>
+                                    <td style='padding: 12px; border: 1px solid #eee; color: #0d6efd;'><strong>{request.Email}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style='padding: 12px; border: 1px solid #eee; font-weight: bold; color: #555; vertical-align: top;'>Nội dung lời nhắn:</td>
+                                    <td style='padding: 12px; border: 1px solid #eee; color: #212529; line-height: 1.5; white-space: pre-line;'>{request.Message}</td>
+                                </tr>
+                            </table>
+                            
+                            <hr style='border: 0; border-top: 1px solid #eee; margin: 25px 0;' />
+                            <p style='font-size: 13px; color: #666; fst-italic: italic; text-align: center;'>
+                                Bạn có thể bấm nút Reply (Phản hồi) trực tiếp trên email này để trả lời cho khách hàng qua địa chỉ <strong>{request.Email}</strong>.
+                            </p>
+                        </div>
+                    </div>
+                ";
+
+                var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(fromEmail, "Trạm Giày Sneaker - Liên Hệ"),
+                    Subject = $"[Trạm Giày Sneaker] Lời nhắn mới từ khách hàng: {request.Name}",
+                    Body = body,
+                    IsBodyHtml = true,
+                };
+
+                mailMessage.ReplyToList.Add(new MailAddress(request.Email));
+                mailMessage.To.Add("phuc512dz@gmail.com");
+
+                await smtpClient.SendMailAsync(mailMessage);
+
+                return Ok(new { success = true, message = "Lời nhắn của bạn đã được gửi thành công!" });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Lỗi thực thi gửi email liên hệ: " + ex.Message);
+                return StatusCode(500, new { message = "Lỗi hệ thống khi gửi email liên hệ!" });
+            }
+        }
+    }
+
+    // Class nhận dữ liệu từ React gửi qua cho chức năng Liên hệ
+    public class ContactRequest
+    {
+        public string Name { get; set; }
+        public string Phone { get; set; }
+        public string Email { get; set; }
+        public string Message { get; set; }
     }
 }

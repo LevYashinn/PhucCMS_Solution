@@ -33,19 +33,26 @@ namespace CMS.Backend.Controllers
             if (request == null || request.CartItems == null || request.CartItems.Count == 0)
                 return BadRequest(new { message = "Giỏ hàng trống!" });
 
-            // 🌟 1. TẠO MÃ GIAO DỊCH GIẢ LẬP (VD: TXN-20231024-A1B2)
+            // 1. TẠO MÃ GIAO DỊCH GIẢ LẬP (VD: TXN-20231024-A1B2)
             string randomChars = Guid.NewGuid().ToString().Substring(0, 4).ToUpper();
             string mockTransactionCode = $"TXN-{DateTime.Now:yyyyMMddHHmmss}-{randomChars}";
 
-            // 🌟 2. THIẾT LẬP ĐƠN HÀNG (STATUS = 1: Đang xử lý)
+            // 🌟 2. PHÂN LOẠI TRẠNG THÁI ĐƠN HÀNG DỰA TRÊN PHƯƠNG THỨC THANH TOÁN
+            int orderStatus = 1; // 1: Mặc định là COD -> Chờ xác nhận
+
+            if (request.PaymentMethod == "VNPAY" || request.PaymentMethod == "MOMO" || request.PaymentMethod == "BANK")
+            {
+                orderStatus = 4; // 4: Trạng thái ĐÃ THANH TOÁN (Bank)
+            }
+
+            // 3. THIẾT LẬP ĐƠN HÀNG VỚI TRẠNG THÁI TƯƠNG ỨNG
             var order = new Order
             {
                 CustomerId = request.CustomerId,
                 OrderDate = DateTime.Now,
-                // Lưu mã giao dịch và phương thức vào Ghi chú
                 Notes = $"[Thanh toán: {request.PaymentMethod ?? "COD"}] [Mã GD: {mockTransactionCode}]",
                 TotalAmount = request.TotalAmount,
-                Status = 1, // 1 mặc định là Đang xử lý / Chờ xác nhận
+                Status = orderStatus, // Gán trạng thái 1 hoặc 4 vào đây
                 ShippingAddress = request.Address ?? "",
                 ShippingPhone = request.Phone ?? ""
             };
@@ -64,39 +71,35 @@ namespace CMS.Backend.Controllers
                 };
                 _context.OrderDetails.Add(orderDetail);
 
-                // ========================================================
                 // 🌟 TỰ ĐỘNG TRỪ SỐ LƯỢNG TỒN KHO TRONG DATABASE 🌟
-                // ========================================================
                 var productInDb = _context.Products.Find(item.ProductId);
                 if (productInDb != null)
                 {
-                    // Lấy số lượng kho hiện tại trừ đi số lượng khách vừa mua
                     productInDb.StockQuantity = productInDb.StockQuantity - item.Quantity;
-
-                    // Cẩn thận: Nếu lỡ trừ mà ra số âm (bán quá tay), set nó về 0 luôn
                     if (productInDb.StockQuantity < 0)
                     {
                         productInDb.StockQuantity = 0;
                     }
                 }
             }
-            // Lưu lại những thay đổi (cả hóa đơn và số lượng tồn kho mới)
+
+            // Lưu lại hóa đơn và số lượng tồn kho mới
             _context.SaveChanges();
 
-            // 🌟 3. GỬI EMAIL KÈM MÃ GIAO DỊCH
+            // 4. GỬI EMAIL KÈM MÃ GIAO DỊCH
             var customer = _context.Customers.FirstOrDefault(c => c.Id == request.CustomerId);
             if (customer != null && !string.IsNullOrEmpty(customer.Email))
             {
                 await SendOrderEmailAsync(customer.Email, customer.FullName, order, request.CartItems, mockTransactionCode, _context);
             }
 
-            // 🌟 4. TRẢ VỀ JSON CHO POSTMAN/REACT KÈM MÃ THANH TOÁN
+            // 5. TRẢ VỀ JSON KÈM MÃ THANH TOÁN
             return Ok(new
             {
                 message = "Thanh toán thành công! Đơn hàng đang được xử lý.",
                 orderId = order.Id,
                 transactionCode = mockTransactionCode,
-                orderStatus = "Đang xử lý"
+                orderStatus = orderStatus == 1 ? "Chờ xác nhận" : "Đã thanh toán"
             });
         }
 
@@ -145,7 +148,7 @@ namespace CMS.Backend.Controllers
         }
 
         // ==========================================
-        // 🌟 4. HÀM HỖ TRỢ GỬI EMAIL 
+        // 4. HÀM HỖ TRỢ GỬI EMAIL 
         // ==========================================
         private async Task SendOrderEmailAsync(string toEmail, string customerName, Order order, List<CartItemRequest> cartItems, string transactionCode, ApplicationDbContext context)
         {
@@ -174,6 +177,9 @@ namespace CMS.Backend.Controllers
                         </tr>";
                 }
 
+                string statusText = order.Status == 1 ? "Chờ xác nhận" : "Đã thanh toán";
+                string statusColor = order.Status == 1 ? "#ffc107" : "#0d6efd";
+
                 string body = $@"
                     <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;'>
                         <div style='background-color: #198754; padding: 20px; text-align: center; color: white;'>
@@ -185,7 +191,7 @@ namespace CMS.Backend.Controllers
                             
                             <div style='background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #198754;'>
                                 <p style='margin: 5px 0; color: #198754; font-size: 16px;'><strong>Mã giao dịch:</strong> {transactionCode}</p>
-                                <p style='margin: 5px 0; color: #dc3545;'><strong>Trạng thái:</strong> Đang xử lý</p>
+                                <p style='margin: 5px 0; color: {statusColor};'><strong>Trạng thái:</strong> {statusText}</p>
                                 <hr style='border: 0; border-top: 1px solid #eee; my-2;'/>
                                 <p style='margin: 5px 0;'><strong>Mã đơn hàng:</strong> #{order.Id}</p>
                                 <p style='margin: 5px 0;'><strong>Ngày đặt:</strong> {order.OrderDate.ToString("dd/MM/yyyy HH:mm")}</p>
@@ -204,7 +210,7 @@ namespace CMS.Backend.Controllers
                                 <tbody>
                                     {itemsHtml}
                                     <tr>
-                                        <td colspan='2' style='padding: 10px; border: 1px solid #ddd; text-align: right; font-weight: bold;'>ĐÃ THANH TOÁN:</td>
+                                        <td colspan='2' style='padding: 10px; border: 1px solid #ddd; text-align: right; font-weight: bold;'>TỔNG TIỀN:</td>
                                         <td style='padding: 10px; border: 1px solid #ddd; text-align: right; font-weight: bold; color: #198754; font-size: 16px;'>{order.TotalAmount:N0} đ</td>
                                     </tr>
                                 </tbody>
