@@ -54,7 +54,7 @@ Bạn cần phải cài đặt sẵn các phần mềm sau trước khi chạy c
 
 **Bước 1:** Clone dự án về máy
 ```bash
-git clone [https://github.com/Tên_Của_Bạn/Tram-Giay-Sneaker.git](https://github.com/Tên_Của_Bạn/Tram-Giay-Sneaker.git)
+git clone [https://github.com/LevYashinn/PhucCMS_Solution/]
 
 Cấu trúc thư mục (Folder Structure)
 Frontend/
