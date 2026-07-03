@@ -2,8 +2,12 @@
 using CMS.Data.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory; // 🌟 Thư viện bộ nhớ đệm cho OTP
 using System;
 using System.Linq;
+using System.Net;
+using System.Net.Mail;
+using System.Threading.Tasks;
 
 namespace CMS.Backend.Controllers
 {
@@ -13,18 +17,19 @@ namespace CMS.Backend.Controllers
     public class AuthController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IMemoryCache _cache; // 🌟 Khai báo bộ nhớ đệm
 
-        public AuthController(ApplicationDbContext context)
+        // 🌟 Nhúng IMemoryCache vào Constructor
+        public AuthController(ApplicationDbContext context, IMemoryCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         [HttpPost("register")]
         public IActionResult Register([FromBody] RegisterModel model)
         {
-            // Bỏ qua lỗi nhỏ để tránh 400 Bad Request
             ModelState.Remove("Address");
-
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             var isEmailExist = _context.Customers.Any(c => c.Email == model.Email);
@@ -76,36 +81,29 @@ namespace CMS.Backend.Controllers
                 }
             });
         }
-        // ==========================================
-        // 🚀 API CẬP NHẬT THÔNG TIN HỒ SƠ (PROFILE)
-        // ==========================================
+
         [HttpPut("update-profile/{id}")]
         public IActionResult UpdateProfile(int id, [FromBody] UpdateProfileModel model)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            // 1. Tìm khách hàng trong DB theo ID
             var customer = _context.Customers.FirstOrDefault(c => c.Id == id);
             if (customer == null)
             {
                 return NotFound(new { message = "Không tìm thấy thông tin tài khoản!" });
             }
 
-            // 2. Cập nhật các trường thông tin mới
             customer.FullName = model.Name;
             customer.Phone = model.Phone;
             customer.Address = model.Address ?? "";
 
-            // Nếu người dùng có nhập mật khẩu mới thì mới cập nhật mật khẩu
             if (!string.IsNullOrEmpty(model.NewPassword))
             {
                 customer.Password = model.NewPassword;
             }
 
-            // 3. Lưu thay đổi vào Database
             _context.SaveChanges();
 
-            // 4. Trả về thông tin mới để React cập nhật lại localStorage
             return Ok(new
             {
                 message = "Cập nhật hồ sơ thành công!",
@@ -118,59 +116,130 @@ namespace CMS.Backend.Controllers
                     address = customer.Address
                 }
             });
-
         }
+
         // ========================================================
-        // 🚀 API QUÊN MẬT KHẨU (XÁC THỰC EMAIL + SĐT ĐỂ ĐẶT LẠI)
+        // 🚀 1. API GỬI MÃ OTP VỀ EMAIL
         // ========================================================
-        [HttpPost("forgot-password")]
-        public IActionResult ForgotPassword([FromBody] ForgotPasswordModel model)
+        [HttpPost("send-otp")]
+        public async Task<IActionResult> SendOtp([FromBody] ForgotPasswordRequest request)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            if (string.IsNullOrEmpty(request.Email)) return BadRequest(new { message = "Vui lòng nhập Email!" });
 
-            // 1. Tìm xem có Customer nào khớp cả Email và Số điện thoại không để xác minh chính chủ
-            var customer = _context.Customers
-                .FirstOrDefault(c => c.Email == model.Email && c.Phone == model.Phone);
+            var user = _context.Customers.FirstOrDefault(c => c.Email == request.Email);
+            if (user == null) return NotFound(new { message = "Email này chưa được đăng ký trong hệ thống!" });
 
-            if (customer == null)
+            // Tạo mã OTP ngẫu nhiên 6 số
+            Random rand = new Random();
+            string otp = rand.Next(100000, 999999).ToString();
+
+            // Lưu OTP vào Cache, có giá trị trong 5 phút
+            _cache.Set($"OTP_{request.Email}", otp, TimeSpan.FromMinutes(5));
+
+            try
             {
-                return BadRequest(new { message = "Email hoặc Số điện thoại không chính xác, vui lòng kiểm tra lại!" });
+                string fromEmail = "phuc512dz@gmail.com";
+                string appPassword = "zbkwoezmagdmxmcg";
+
+                var smtpClient = new SmtpClient("smtp.gmail.com")
+                {
+                    Port = 587,
+                    Credentials = new NetworkCredential(fromEmail, appPassword),
+                    EnableSsl = true,
+                };
+
+                var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(fromEmail, "Trạm Giày Sneaker - Bảo Mật"),
+                    Subject = "[Trạm Giày Sneaker] Mã xác thực lấy lại mật khẩu",
+                    Body = $@"
+                        <div style='font-family: Arial; padding: 20px; border: 1px solid #ddd; border-radius: 10px; max-width: 500px; margin: auto;'>
+                            <h2 style='color: #dc3545; text-align: center;'>MÃ XÁC THỰC OTP</h2>
+                            <p>Chào bạn,</p>
+                            <p>Bạn vừa yêu cầu đặt lại mật khẩu tại hệ thống Trạm Giày Sneaker. Dưới đây là mã xác thực (OTP) của bạn:</p>
+                            <div style='text-align: center; margin: 20px 0;'>
+                                <span style='font-size: 30px; font-weight: bold; background: #f8f9fa; padding: 10px 20px; border-radius: 8px; letter-spacing: 5px; color: #212529;'>{otp}</span>
+                            </div>
+                            <p style='color: #666; font-size: 13px;'>* Mã này chỉ có hiệu lực trong vòng 5 phút. Vui lòng không chia sẻ mã này cho bất kỳ ai.</p>
+                        </div>
+                    ",
+                    IsBodyHtml = true,
+                };
+                mailMessage.To.Add(request.Email);
+
+                await smtpClient.SendMailAsync(mailMessage);
+                return Ok(new { message = "Mã OTP đã được gửi đến Email của bạn!" });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Lỗi gửi OTP: " + ex.Message);
+                return StatusCode(500, new { message = "Lỗi hệ thống khi gửi Email!" });
+            }
+        }
+
+        // ========================================================
+        // 🚀 2. API XÁC NHẬN OTP & ĐỔI MẬT KHẨU
+        // ========================================================
+        [HttpPost("reset-password-with-otp")]
+        public IActionResult ResetPasswordWithOtp([FromBody] ResetPasswordRequest request)
+        {
+            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Otp) || string.IsNullOrEmpty(request.NewPassword))
+                return BadRequest(new { message = "Vui lòng điền đầy đủ thông tin!" });
+
+            // Kiểm tra OTP trong Cache
+            if (!_cache.TryGetValue($"OTP_{request.Email}", out string savedOtp))
+            {
+                return BadRequest(new { message = "Mã OTP đã hết hạn hoặc không tồn tại. Vui lòng yêu cầu gửi lại!" });
             }
 
-            // 2. Nếu khớp thông tin -> Tiến hành đè mật khẩu mới
-            customer.Password = model.NewPassword;
-            _context.SaveChanges(); // Lưu vào SQL Server
+            if (savedOtp != request.Otp)
+            {
+                return BadRequest(new { message = "Mã OTP không chính xác!" });
+            }
 
-            return Ok(new { message = "Đặt lại mật khẩu thành công! Bạn đang được chuyển đến trang đăng nhập..." });
+            // Đổi mật khẩu
+            var user = _context.Customers.FirstOrDefault(c => c.Email == request.Email);
+            if (user == null) return NotFound(new { message = "Không tìm thấy tài khoản!" });
+
+            user.Password = request.NewPassword;
+            _context.SaveChanges();
+
+            // Xóa OTP khỏi Cache sau khi dùng xong
+            _cache.Remove($"OTP_{request.Email}");
+
+            return Ok(new { message = "Đặt lại mật khẩu thành công!" });
         }
-        // --- CLASS NHẬN DỮ LIỆU CẬP NHẬT TỪ TRÌNH DUYỆT ---
+
+        // --- CÁC CLASS NHẬN DỮ LIỆU ---
         public class UpdateProfileModel
         {
             public string Name { get; set; }
             public string Phone { get; set; }
             public string? Address { get; set; }
-            public string? NewPassword { get; set; } // Có thể đổi mật khẩu hoặc không
+            public string? NewPassword { get; set; }
         }
-    }
-    // --- CLASS ĐẠI DIỆN DỮ LIỆU ĐỂ HỨNG TỪ REACT ---
-    public class ForgotPasswordModel
-    {
-        public string Email { get; set; }
-        public string Phone { get; set; }
-        public string NewPassword { get; set; }
-    }
-    public class RegisterModel
-    {
-        public string Name { get; set; }
-        public string Email { get; set; }
-        public string Password { get; set; }
-        public string Phone { get; set; }
-        public string? Address { get; set; }
-    }
-
-    public class LoginModel
-    {
-        public string Email { get; set; }
-        public string Password { get; set; }
+        public class RegisterModel
+        {
+            public string Name { get; set; }
+            public string Email { get; set; }
+            public string Password { get; set; }
+            public string Phone { get; set; }
+            public string? Address { get; set; }
+        }
+        public class LoginModel
+        {
+            public string Email { get; set; }
+            public string Password { get; set; }
+        }
+        public class ForgotPasswordRequest
+        {
+            public string Email { get; set; }
+        }
+        public class ResetPasswordRequest
+        {
+            public string Email { get; set; }
+            public string Otp { get; set; }
+            public string NewPassword { get; set; }
+        }
     }
 }

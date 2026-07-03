@@ -3,17 +3,19 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using CMS.Data;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddMemoryCache(); // Thêm dòng này để hỗ trợ lưu OTP tạm thời
 
 // ==========================================
-// 1. CẤU HÌNH CORS (BẮT BUỘC PHẢI THÊM)
+// 1. CẤU HÌNH CORS (ĐÃ NÂNG CẤP ĐỂ KHÔNG BỊ CHẶN NETWORK ERROR)
 // ==========================================
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.AllowAnyOrigin()  // Cho phép React (cổng 3000 hoặc bất kỳ cổng nào) gọi API
-              .AllowAnyHeader()  // Cho phép mọi loại dữ liệu gửi lên
-              .AllowAnyMethod(); // Cho phép GET, POST, PUT, DELETE...
+        policy.WithOrigins("http://localhost:3000", "https://localhost:3000") // Cấp quyền đích danh cho React
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials(); // Hỗ trợ gửi/nhận dữ liệu bảo mật (Credentials)
     });
 });
 
@@ -23,17 +25,12 @@ builder.Services.AddCors(options =>
 builder.Services.AddControllersWithViews()
     .AddJsonOptions(options =>
     {
-        // 1. Chống sập Backend do lỗi vòng lặp vô hạn
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-
-        // 2. Ép C# viết thường chữ cái đầu (Thành id, name, price, imageUrl) để React đọc được
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
     });
 
-// --- THÊM 2 DÒNG NÀY ĐỂ HỖ TRỢ SWAGGER ---
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-// ------------------------------------------
 
 // Đăng ký DbContext vào hệ thống
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -50,7 +47,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -58,16 +54,9 @@ if (!app.Environment.IsDevelopment())
 }
 else
 {
-    // --- THÊM 2 DÒNG NÀY ĐỂ HIỂN THỊ GIAO DIỆN SWAGGER ---
     app.UseSwagger();
     app.UseSwaggerUI();
-    // ----------------------------------------------------
 }
-
-// ==========================================
-// 🌟 TẮT ÉP BUỘC HTTPS ĐỂ CỔNG HTTP (5226) CỦA REACT KHÔNG BỊ CHẶN LỖI NETWORK
-// ==========================================
-// app.UseHttpsRedirection(); 
 
 app.UseStaticFiles();
 
@@ -75,11 +64,9 @@ app.UseRouting();
 
 // ==========================================
 // 2. KÍCH HOẠT CORS (BẮT BUỘC ĐẶT Ở VỊ TRÍ NÀY)
-// Nằm dưới UseRouting và trên UseAuthentication
 // ==========================================
 app.UseCors("AllowReactApp");
 
-// Bật Middleware Xác thực 
 app.UseAuthentication();
 app.UseAuthorization();
 
