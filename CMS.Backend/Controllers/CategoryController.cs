@@ -3,6 +3,7 @@ using CMS.Data.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -19,11 +20,25 @@ namespace CMS.Backend.Controllers
         }
 
         // ==========================================
-        // 1. GIAO DIỆN QUẢN TRỊ (ADMIN)
+        // 1. GIAO DIỆN QUẢN TRỊ (ADMIN) - ĐÃ THÊM PHÂN TRANG
         // ==========================================
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int page = 1)
         {
-            var data = await _context.Categories.OrderByDescending(c => c.Id).ToListAsync();
+            int pageSize = 5; // 🌟 Đang cấu hình hiển thị 5 danh mục trên 1 trang (bạn có thể tự đổi số khác)
+
+            var query = _context.Categories.OrderByDescending(c => c.Id);
+
+            // Tính tổng số mục và tổng số trang
+            int totalItems = await query.CountAsync();
+            int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+            // Lấy dữ liệu của trang hiện tại (Skip & Take)
+            var data = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+            // Đẩy thông số trang xuống View
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = totalPages;
+
             return View(data);
         }
 

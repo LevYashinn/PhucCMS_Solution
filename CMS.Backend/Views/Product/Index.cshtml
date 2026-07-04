@@ -6,68 +6,105 @@
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="text-dark font-weight-bold m-0 text-uppercase">BÀI TẬP 4: LIỆT KÊ DANH SÁCH PRODUCTS</h3>
-        <a href="/Product/Create" class="btn btn-success btn-sm">
-            <i class="bi bi-plus-circle"></i> + Thêm sản phẩm mới
+        <h3 class="text-dark font-weight-bold m-0 text-uppercase"><i class="bi bi-box-seam me-2"></i> LIỆT KÊ DANH SÁCH SẢN PHẨM</h3>
+        <a href="/Product/Create" class="btn btn-success btn-sm fw-bold shadow-sm py-2 px-3">
+            <i class="bi bi-plus-circle"></i> Thêm sản phẩm mới
         </a>
     </div>
 
-    <table class="table table-bordered table-striped table-hover align-middle shadow-sm bg-white">
-        <thead class="table-primary text-dark">
-            <tr>
-                <th style="width: 80px;" class="text-center">ID</th>
-                <th style="width: 100px;" class="text-center">Hình Ảnh</th>
-                <th style="width: 200px;">Tên Sản Phẩm</th>
-                <th style="width: 150px;">Danh Mục</th>
-                <th>Mô Tả Sản Phẩm</th>
-                <th style="width: 140px;" class="text-end">Giá Bán</th>
-                <th style="width: 100px;" class="text-center">Tồn Kho</th>
-                <th class="text-center" style="width: 150px;">Thao Tác</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (Model != null && Model.Any())
-            {
-                foreach (var item in Model)
-                {
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-0">
+            <table class="table table-bordered table-striped table-hover align-middle mb-0 bg-white">
+                <thead class="table-primary text-dark">
                     <tr>
-                        <td class="text-center font-weight-bold">@item.Id</td>
-                        <td class="text-center">
-                            <img src="@item.ImageUrl" alt="product-img" class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;" onError="this.src='https://placehold.co/60'">
-                        </td>
-                        <td class="font-weight-bold text-primary">@item.Name</td>
-
-                        <td class="text-center">
-                            <span class="badge bg-info text-dark">@item.CategoryProduct?.Name</span>
-                        </td>
-
-                        <td class="text-muted text-truncate" style="max-width: 300px;">@item.Description</td>
-                        <td class="text-end text-danger font-weight-bold">@item.Price.ToString("N0") đ</td>
-                        <td class="text-center">
-                            <span class="badge @(item.StockQuantity > 10 ? "bg-success" : "bg-warning")">
-                                @item.StockQuantity
-                            </span>
-                        </td>
-                        <td class="text-center">
-                            <a href="/Product/Edit/@item.Id" class="btn btn-warning btn-sm py-1 px-2 text-white me-1">
-                                <i class="bi bi-pencil"></i> Sửa
-                            </a>
-                            <a href="/Product/Delete/@item.Id" class="btn btn-danger btn-sm py-1 px-2"
-                               onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này không?')">
-                                <i class="bi bi-trash"></i> Xóa
-                            </a>
-                        </td>
+                        <th style="width: 80px;" class="text-center">ID</th>
+                        <th style="width: 100px;" class="text-center">Hình Ảnh</th>
+                        <th style="width: 200px;">Tên Sản Phẩm</th>
+                        <th style="width: 150px;" class="text-center">Danh Mục</th>
+                        <th>Mô Tả Sản Phẩm</th>
+                        <th style="width: 140px;" class="text-end">Giá Bán</th>
+                        <th style="width: 100px;" class="text-center">Tồn Kho</th>
+                        <th class="text-center" style="width: 150px;">Thao Tác</th>
                     </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="text-center font-weight-bold">@item.Id</td>
+                                <td class="text-center">
+                                    <img src="@item.ImageUrl" alt="product-img" class="img-thumbnail shadow-sm" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;" onError="this.src='https://placehold.co/60'">
+                                </td>
+                                <td class="font-weight-bold text-primary">@item.Name</td>
+
+                                <td class="text-center">
+                                    <span class="badge bg-info text-dark px-2 py-1">@item.CategoryProduct?.Name</span>
+                                </td>
+
+                                <td class="text-muted text-truncate" style="max-width: 250px;">@item.Description</td>
+                                <td class="text-end text-danger font-weight-bold">@item.Price.ToString("N0") đ</td>
+                                <td class="text-center">
+                                    <span class="badge @(item.StockQuantity > 10 ? "bg-success" : (item.StockQuantity > 0 ? "bg-warning text-dark" : "bg-danger")) px-3 py-2">
+                                        @item.StockQuantity
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <a href="/Product/Edit/@item.Id" class="btn btn-warning btn-sm py-1 px-2 text-dark shadow-sm me-1" title="Sửa">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    <a href="/Product/Delete/@item.Id" class="btn btn-danger btn-sm py-1 px-2 shadow-sm"
+                                       onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm [@item.Name] không?')" title="Xóa">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                                <h5>Chưa có dữ liệu sản phẩm nào.</h5>
+                                <p>Hãy kiểm tra lại cơ sở dữ liệu hoặc thêm mới sản phẩm!</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (ViewBag.TotalPages > 1)
+    {
+        <nav aria-label="Page navigation" class="mt-4 pb-4">
+            <ul class="pagination justify-content-end shadow-sm">
+
+                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                    <a class="page-link fw-bold text-primary"
+                       href="/Product/Index?categoryId=@ViewBag.SelectedCategoryId&page=@(ViewBag.CurrentPage - 1)"
+                       tabindex="-1" aria-disabled="@(ViewBag.CurrentPage == 1 ? "true" : "false")">
+                        <i class="bi bi-chevron-left"></i> Trước
+                    </a>
+                </li>
+
+                @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                {
+                    <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                        <a class="page-link fw-bold" href="/Product/Index?categoryId=@ViewBag.SelectedCategoryId&page=@i">@i</a>
+                    </li>
                 }
-            }
-            else
-            {
-                <tr>
-                    <td colspan="8" class="text-center text-muted py-3">
-                        Chưa có dữ liệu sản phẩm nào. Hãy kiểm tra lại SQL Server!
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+
+                <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                    <a class="page-link fw-bold text-primary"
+                       href="/Product/Index?categoryId=@ViewBag.SelectedCategoryId&page=@(ViewBag.CurrentPage + 1)"
+                       aria-disabled="@(ViewBag.CurrentPage == ViewBag.TotalPages ? "true" : "false")">
+                        Sau <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
 </div>

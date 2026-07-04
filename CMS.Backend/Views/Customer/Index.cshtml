@@ -1,55 +1,95 @@
 ﻿@model List<CMS.Data.Entities.Customer>
-    @{
+@{
     Layout = "_LayoutAdmin";
     ViewData["Title"] = "Danh sách khách hàng";
-    }
+}
 
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="text-dark font-weight-bold m-0 text-uppercase">BÀI TẬP 5: LIỆT KÊ DANH SÁCH CUSTOMERS</h3>
-            <a href="/Customer/Create" class="btn btn-info btn-sm text-white">
-                <i class="bi bi-person-plus"></i> + Thêm khách hàng mới
-            </a>
-        </div>
-
-        <table class="table table-bordered table-striped table-hover align-middle shadow-sm bg-white">
-            <thead class="table-dark text-white">
-                <tr>
-                    <th style="width: 80px;" class="text-center">ID</th>
-                    <th>Họ Và Tên</th>
-                    <th>Email</th>
-                    <th style="width: 160px;">Số Điện Thoại</th>
-                    <th>Địa Chỉ</th>
-                    <th class="text-center" style="width: 150px;">Thao Tác</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (Model != null && Model.Any())
-            {
-                foreach (var item in Model)
-                {
-                <tr>
-                    <td class="text-center font-weight-bold text-secondary">@item.Id</td>
-                    <td class="font-weight-bold text-dark">@item.FullName</td>
-                    <td>@item.Email</td>
-                    <td class="text-primary font-weight-bold">@item.Phone</td>
-                    <td class="text-muted">@item.Address</td>
-                    <td class="text-center">
-                        <a href="/Customer/Edit/@item.Id" class="btn btn-warning btn-sm py-1 px-2 text-white me-1">Sửa</a>
-                        <a href="/Customer/Delete/@item.Id" class="btn btn-danger btn-sm py-1 px-2"
-                           onclick="return confirm('Bạn có chắc muốn xóa khách hàng này?')">Xóa</a>
-                    </td>
-                </tr>
-                }
-            }
-            else
-            {
-                <tr>
-                    <td colspan="6" class="text-center text-muted py-3">
-                        Chưa có dữ liệu khách hàng nào.
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="text-dark font-weight-bold m-0 text-uppercase"><i class="bi bi-people-fill me-2"></i> LIỆT KÊ DANH SÁCH CUSTOMERS</h3>
+        <a href="/Customer/Create" class="btn btn-info btn-sm text-white fw-bold shadow-sm py-2 px-3">
+            <i class="bi bi-person-plus"></i> Thêm khách hàng mới
+        </a>
     </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-0">
+            <table class="table table-bordered table-striped table-hover align-middle mb-0 bg-white">
+                <thead class="table-dark text-white text-center">
+                    <tr>
+                        <th style="width: 80px;">ID</th>
+                        <th>Họ Và Tên</th>
+                        <th>Email</th>
+                        <th style="width: 160px;">Số Điện Thoại</th>
+                        <th>Địa Chỉ</th>
+                        <th style="width: 150px;">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="text-center font-weight-bold text-secondary">@item.Id</td>
+                                <td class="font-weight-bold text-dark">@item.FullName</td>
+                                <td>@item.Email</td>
+                                <td class="text-primary font-weight-bold text-center">@item.Phone</td>
+                                <td class="text-muted">@item.Address</td>
+                                <td class="text-center">
+                                    <a href="/Customer/Edit/@item.Id" class="btn btn-warning btn-sm py-1 px-2 text-dark shadow-sm me-1" title="Sửa">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    <a href="/Customer/Delete/@item.Id" class="btn btn-danger btn-sm py-1 px-2 shadow-sm"
+                                       onclick="return confirm('Bạn có chắc muốn xóa khách hàng này?')" title="Xóa">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                                <h5>Chưa có dữ liệu khách hàng nào.</h5>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (ViewBag.TotalPages > 1)
+    {
+        <nav aria-label="Page navigation" class="mt-4 pb-4">
+            <ul class="pagination justify-content-end shadow-sm">
+
+                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                    <a class="page-link fw-bold text-primary"
+                       href="/Customer/Index?page=@(ViewBag.CurrentPage - 1)"
+                       tabindex="-1" aria-disabled="@(ViewBag.CurrentPage == 1 ? "true" : "false")">
+                        <i class="bi bi-chevron-left"></i> Trước
+                    </a>
+                </li>
+
+                @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                {
+                    <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                        <a class="page-link fw-bold" href="/Customer/Index?page=@i">@i</a>
+                    </li>
+                }
+
+                <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                    <a class="page-link fw-bold text-primary"
+                       href="/Customer/Index?page=@(ViewBag.CurrentPage + 1)"
+                       aria-disabled="@(ViewBag.CurrentPage == ViewBag.TotalPages ? "true" : "false")">
+                        Sau <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>

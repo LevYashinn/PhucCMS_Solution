@@ -12,7 +12,7 @@
         </a>
     </div>
 
-    <div class="card shadow-sm border-0">
+    <div class="card shadow-sm border-0 mb-4">
         <div class="card-body p-0">
             <table class="table table-hover table-bordered mb-0 align-middle">
                 <thead class="table-primary text-center">
@@ -57,4 +57,31 @@
             </table>
         </div>
     </div>
+
+    @if (ViewBag.TotalPages > 1)
+    {
+        <nav aria-label="Page navigation example">
+            <ul class="pagination justify-content-end shadow-sm">
+
+                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                    <a class="page-link fw-bold text-primary" href="/Category/Index?page=@(ViewBag.CurrentPage - 1)" tabindex="-1" aria-disabled="@(ViewBag.CurrentPage == 1 ? "true" : "false")">
+                        <i class="bi bi-chevron-left"></i> Trước
+                    </a>
+                </li>
+
+                @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                {
+                    <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                        <a class="page-link fw-bold" href="/Category/Index?page=@i">@i</a>
+                    </li>
+                }
+
+                <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                    <a class="page-link fw-bold text-primary" href="/Category/Index?page=@(ViewBag.CurrentPage + 1)" aria-disabled="@(ViewBag.CurrentPage == ViewBag.TotalPages ? "true" : "false")">
+                        Sau <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
 </div>

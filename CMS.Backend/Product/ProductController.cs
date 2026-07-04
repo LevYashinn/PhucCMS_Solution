@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace CMS.Backend.Controllers
 {
@@ -20,21 +21,39 @@ namespace CMS.Backend.Controllers
             _context = context;
         }
 
-        // 1. Action hiển thị danh sách sản phẩm (Bao gồm cả lọc danh mục cho Admin)
-        public IActionResult Index(int? categoryId)
+        // ==========================================
+        // 🌟 1. HIỂN THỊ SẢN PHẨM (CÓ LỌC DANH MỤC & PHÂN TRANG)
+        // ==========================================
+        public async Task<IActionResult> Index(int? categoryId, int page = 1)
         {
+            int pageSize = 5; // 🌟 Giới hạn hiển thị 5 sản phẩm trên 1 trang
+
             var query = _context.Products
                                 .Include(p => p.CategoryProduct)
                                 .AsQueryable();
 
+            // Nếu người dùng chọn lọc theo danh mục
             if (categoryId.HasValue && categoryId.Value > 0)
             {
                 query = query.Where(p => p.CategoryProductId == categoryId.Value);
-                ViewBag.SelectedCategoryId = categoryId;
+                ViewBag.SelectedCategoryId = categoryId; // Giữ lại ID để nhúng vào link phân trang
             }
 
-            var products = query.OrderByDescending(p => p.Id).ToList();
-            ViewBag.Categories = _context.CategoryProducts.ToList();
+            // Tính toán tổng số sản phẩm và tổng số trang
+            int totalItems = await query.CountAsync();
+            int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+            // Cắt lấy đúng 5 sản phẩm của trang hiện tại
+            var products = await query.OrderByDescending(p => p.Id)
+                                      .Skip((page - 1) * pageSize)
+                                      .Take(pageSize)
+                                      .ToListAsync();
+
+            ViewBag.Categories = await _context.CategoryProducts.ToListAsync();
+
+            // Đẩy dữ liệu trang xuống View
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = totalPages;
 
             return View(products);
         }
@@ -162,7 +181,6 @@ namespace CMS.Backend.Controllers
         // 🚀 CÁC HÀM API TRẢ VỀ JSON CHO REACT GỌI (ĐÃ CHUẨN HÓA ROUTE)
         // =========================================================================
 
-        // Lấy tất cả sản phẩm
         [AllowAnonymous]
         [HttpGet("api/products")]
         public IActionResult GetProductsForReact()
@@ -171,7 +189,6 @@ namespace CMS.Backend.Controllers
             return Json(products);
         }
 
-        // Lấy chi tiết 1 sản phẩm theo ID
         [AllowAnonymous]
         [HttpGet("api/products/{id}")]
         public IActionResult GetProductDetailForReact(int id)
@@ -181,7 +198,6 @@ namespace CMS.Backend.Controllers
             return Json(product);
         }
 
-        // Lọc sản phẩm theo ID Danh mục
         [AllowAnonymous]
         [HttpGet("api/products/category/{categoryId}")]
         public IActionResult GetProductsByCategory(int categoryId)
@@ -193,7 +209,6 @@ namespace CMS.Backend.Controllers
             return Json(products);
         }
 
-        // Lấy danh sách danh mục sản phẩm
         [AllowAnonymous]
         [HttpGet("api/categories")]
         public IActionResult GetCategoriesForReact()
@@ -202,7 +217,6 @@ namespace CMS.Backend.Controllers
             return Json(categories);
         }
 
-        // 🌟 API TÌM KIẾM THỜI GIAN THỰC & LỌC THEO GIÁ
         [AllowAnonymous]
         [HttpGet("api/products/search")]
         public IActionResult SearchProducts([FromQuery] string? keyword, [FromQuery] decimal? minPrice, [FromQuery] decimal? maxPrice)
@@ -226,18 +240,13 @@ namespace CMS.Backend.Controllers
             }
 
             var results = query.OrderByDescending(p => p.Id).ToList();
-
             return Json(results);
         }
 
-        // =========================================================================
-        // 🌟 ĐÃ THÊM MỚI: API LẤY DANH SÁCH SẢN PHẨM BÁN CHẠY NHẤT (TOP BEST SELLERS)
-        // =========================================================================
         [AllowAnonymous]
         [HttpGet("api/products/best-sellers")]
         public IActionResult GetBestSellers([FromQuery] int limit = 4)
         {
-            // 1. Nhóm và đếm số lượng bán theo ProductId từ bảng OrderDetails
             var bestSellerIds = _context.OrderDetails
                 .GroupBy(od => od.ProductId)
                 .Select(g => new
@@ -250,17 +259,14 @@ namespace CMS.Backend.Controllers
                 .Select(x => x.ProductId)
                 .ToList();
 
-            // 2. Lấy thông tin chi tiết sản phẩm
             var products = _context.Products
                 .Where(p => bestSellerIds.Contains(p.Id))
                 .ToList();
 
-            // 3. Sắp xếp lại đúng thứ tự bán nhiều nhất lên đầu
             var sortedProducts = products
                 .OrderBy(p => bestSellerIds.IndexOf(p.Id))
                 .ToList();
 
-            // 4. Nếu chưa ai mua hàng (Database rỗng), tự động lấy 4 sản phẩm mới nhất làm giả định
             if (!sortedProducts.Any())
             {
                 sortedProducts = _context.Products

@@ -24,19 +24,42 @@ namespace CMS.Backend.Controllers
             _context = context;
         }
 
-        // 1. Hiển thị danh sách bài viết từ SQL Server (Admin)
-        public IActionResult Index(int? id)
+        // ==========================================
+        // 🌟 1. HIỂN THỊ DANH SÁCH BÀI VIẾT (ĐÃ THÊM PHÂN TRANG)
+        // ==========================================
+        public IActionResult Index(int? id, int page = 1)
         {
+            int pageSize = 6; // Hiện 6 bài/trang (chia làm 2 hàng ngang rất đẹp)
+
             var query = _context.Posts.Include(p => p.Category).AsQueryable();
 
+            // Nếu có lọc theo danh mục
             if (id != null)
             {
                 query = query.Where(p => p.CategoryId == id);
+                ViewBag.CurrentCategoryId = id; // Lưu lại ID để gắn vào link phân trang
             }
 
-            var posts = query.OrderByDescending(p => p.CreatedDate).ToList();
+            // Tính toán tổng số lượng và số trang
+            int totalItems = query.Count();
+            int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+            // Cắt lấy dữ liệu trang hiện tại
+            var posts = query.OrderByDescending(p => p.CreatedDate)
+                             .Skip((page - 1) * pageSize)
+                             .Take(pageSize)
+                             .ToList();
+
+            // Đẩy dữ liệu phân trang xuống View
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = totalPages;
+
             return View(posts);
         }
+
+        // ==========================================
+        // CÁC HÀM BÊN DƯỚI GIỮ NGUYÊN HOÀN TOÀN CỦA BẠN
+        // ==========================================
 
         // 2. Chi tiết bài viết (Admin/Khách)
         [AllowAnonymous]
@@ -188,13 +211,11 @@ namespace CMS.Backend.Controllers
         [HttpGet("api/get-posts")]
         public IActionResult GetPostsForReact()
         {
-            // 🌟 FIX: Gọi .ToList() trước để kéo dữ liệu từ SQL lên RAM an toàn
             var rawPosts = _context.Posts
                 .Include(p => p.Category)
                 .OrderByDescending(p => p.CreatedDate)
                 .ToList();
 
-            // 🌟 Sau đó mới dùng C# đóng gói (DTO) và định dạng ngày tháng
             var posts = rawPosts.Select(p => new
             {
                 Id = p.Id,
@@ -209,16 +230,13 @@ namespace CMS.Backend.Controllers
             return Json(posts);
         }
 
-        // =========================================================================
-        // 🚀 CỬA PHỤ CHO REACT: LẤY DANH MỤC BÀI VIẾT (ĐÃ FIX LỖI 500 SERVER)
-        // =========================================================================
         [AllowAnonymous]
         [HttpGet("api/get-post-categories")]
         public IActionResult GetPostCategoriesForReact()
         {
             var categories = _context.Categories
                 .OrderByDescending(c => c.Id)
-                .ToList() // 🌟 FIX: Kéo thẳng lên RAM cho an toàn trước
+                .ToList()
                 .Select(c => new
                 {
                     Id = c.Id,
@@ -228,9 +246,6 @@ namespace CMS.Backend.Controllers
             return Json(categories);
         }
 
-        // =========================================================================
-        // 🌟 API HỖ TRỢ UPLOAD ẢNH TỪ BÊN TRONG KHUNG SOẠN THẢO CKEDITOR
-        // =========================================================================
         [HttpPost]
         public IActionResult UploadImageEditor(IFormFile upload)
         {
@@ -255,9 +270,6 @@ namespace CMS.Backend.Controllers
             return Json(new { uploaded = 0, error = new { message = "Lỗi: Không thể tải ảnh lên máy chủ!" } });
         }
 
-        // =========================================================================
-        // 🌟 API: TIẾP NHẬN FORM LIÊN HỆ VÀ TỰ ĐỘNG GỬI EMAIL VỀ CHO ADMIN
-        // =========================================================================
         [AllowAnonymous]
         [HttpPost("api/contact/send-message")]
         public async Task<IActionResult> ReceiveContactMessage([FromBody] ContactRequest request)
@@ -337,7 +349,6 @@ namespace CMS.Backend.Controllers
         }
     }
 
-    // Class nhận dữ liệu từ React gửi qua cho chức năng Liên hệ
     public class ContactRequest
     {
         public string Name { get; set; }

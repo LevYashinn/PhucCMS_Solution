@@ -4,36 +4,86 @@
 }
 
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="text-dark">DANH SÁCH BÀI VIẾT</h2>
-        <a asp-action="Create" class="btn btn-success">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-dark fw-bold"><i class="bi bi-file-earmark-richtext"></i> DANH SÁCH BÀI VIẾT</h2>
+        <a asp-action="Create" class="btn btn-success fw-bold shadow-sm">
             <i class="bi bi-plus-circle"></i> Thêm bài viết mới
         </a>
     </div>
+
     <div class="row">
-        @foreach (var item in Model)
+        @if (Model != null && Model.Any())
         {
-            <div class="col-md-4 mb-3">
-                <div class="card shadow-sm">
-                    <img src="@item.ImageUrl" class="card-img-top" alt="Thumbnail">
-                    <div class="card-body">
-                        <span class="badge bg-info text-dark">@item.Category.Name</span>
-                        <h5 class="card-title text-primary">@item.Title</h5>
-                        <p class="card-text text-truncate">@item.Content</p>
-                        <p class="text-muted small">Ngày đăng: @item.CreatedDate.ToString("dd/MM/yyyy")</p>
-                        <a href="/Post/Details/@item.Id" class="btn btn-outline-primary btn-sm">Xem chi tiết</a>
-                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning">
-                            Sửa
-                        </a>
-                            
-                        <a asp-action="Delete" asp-route-id="@item.Id"
-                           class="btn btn-sm btn-outline-danger"
-                           onclick="return confirm('Chúng ta có chắc chắn muốn xóa bài viết này không?')">
-                            <i class="bi bi-trash"></i> Xóa
-                        </a>
+            @foreach (var item in Model)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card shadow-sm h-100 border-0 rounded-3">
+                        <img src="@item.ImageUrl" class="card-img-top" alt="Thumbnail" style="height: 200px; object-fit: cover;">
+                        <div class="card-body d-flex flex-column">
+                            <div class="mb-2">
+                                <span class="badge bg-info text-dark">@(item.Category != null ? item.Category.Name : "Chưa phân loại")</span>
+                            </div>
+                            <h5 class="card-title text-primary fw-bold" style="line-height: 1.4;">@item.Title</h5>
+
+                            <p class="text-muted small mt-auto border-top pt-3">
+                                <i class="bi bi-calendar-event"></i> Ngày đăng: @item.CreatedDate.ToString("dd/MM/yyyy HH:mm")
+                            </p>
+
+                            <div class="d-flex gap-2 mt-2">
+                                <a href="/Post/Details/@item.Id" class="btn btn-outline-primary btn-sm flex-fill">
+                                    <i class="bi bi-eye"></i> Xem
+                                </a>
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning flex-fill">
+                                    <i class="bi bi-pencil-square"></i> Sửa
+                                </a>
+                                <a asp-action="Delete" asp-route-id="@item.Id"
+                                   class="btn btn-sm btn-outline-danger flex-fill"
+                                   onclick="return confirm('Chúng ta có chắc chắn muốn xóa bài viết này không?')">
+                                    <i class="bi bi-trash"></i> Xóa
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
+            }
+        }
+        else
+        {
+            <div class="col-12 text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                <h5>Chưa có bài viết nào trong hệ thống!</h5>
             </div>
         }
     </div>
+
+    @if (ViewBag.TotalPages > 1)
+    {
+        <nav aria-label="Page navigation" class="mt-4 mb-5">
+            <ul class="pagination justify-content-center shadow-sm">
+
+                <li class="page-item @(ViewBag.CurrentPage == 1 ? "disabled" : "")">
+                    <a class="page-link fw-bold text-primary"
+                       href="/Post/Index?id=@ViewBag.CurrentCategoryId&page=@(ViewBag.CurrentPage - 1)"
+                       tabindex="-1" aria-disabled="@(ViewBag.CurrentPage == 1 ? "true" : "false")">
+                        <i class="bi bi-chevron-left"></i> Trước
+                    </a>
+                </li>
+
+                @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                {
+                    <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                        <a class="page-link fw-bold" href="/Post/Index?id=@ViewBag.CurrentCategoryId&page=@i">@i</a>
+                    </li>
+                }
+
+                <li class="page-item @(ViewBag.CurrentPage == ViewBag.TotalPages ? "disabled" : "")">
+                    <a class="page-link fw-bold text-primary"
+                       href="/Post/Index?id=@ViewBag.CurrentCategoryId&page=@(ViewBag.CurrentPage + 1)"
+                       aria-disabled="@(ViewBag.CurrentPage == ViewBag.TotalPages ? "true" : "false")">
+                        Sau <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
 </div>

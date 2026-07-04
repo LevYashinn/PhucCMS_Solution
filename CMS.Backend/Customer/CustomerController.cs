@@ -2,6 +2,9 @@
 using CMS.Data;
 using CMS.Data.Entities;
 using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using System;
 
 namespace CMS.Backend.Controllers
 {
@@ -14,10 +17,29 @@ namespace CMS.Backend.Controllers
             _context = context;
         }
 
-        // Danh sách khách hàng
-        public IActionResult Index()
+        // ==========================================
+        // 🌟 1. DANH SÁCH KHÁCH HÀNG (ĐÃ THÊM PHÂN TRANG)
+        // ==========================================
+        public async Task<IActionResult> Index(int page = 1)
         {
-            var customers = _context.Customers.OrderByDescending(c => c.Id).ToList();
+            int pageSize = 5; // Hiện 5 khách hàng trên 1 trang
+
+            var query = _context.Customers.AsQueryable();
+
+            // Tính tổng số mục và tổng số trang
+            int totalItems = await query.CountAsync();
+            int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+            // Cắt lấy dữ liệu trang hiện tại
+            var customers = await query.OrderByDescending(c => c.Id)
+                                       .Skip((page - 1) * pageSize)
+                                       .Take(pageSize)
+                                       .ToListAsync();
+
+            // Đẩy dữ liệu phân trang xuống View
+            ViewBag.CurrentPage = page;
+            ViewBag.TotalPages = totalPages;
+
             return View(customers);
         }
 
@@ -28,13 +50,12 @@ namespace CMS.Backend.Controllers
             return View();
         }
 
-        // POST: Xử lý Thêm mới (ĐÃ SỬA: Gán mật khẩu mặc định để tránh lỗi NOT NULL trong SQL Server)
+        // POST: Xử lý Thêm mới (Gán mật khẩu mặc định để tránh lỗi NOT NULL)
         [HttpPost]
         public IActionResult Create(Customer model)
         {
             if (model != null)
             {
-                // Nếu mô hình thực thể yêu cầu Password, gán mật khẩu mặc định là 123456 để không bị lỗi trống dữ liệu
                 if (string.IsNullOrEmpty(model.Password))
                 {
                     model.Password = "123456";
@@ -56,7 +77,7 @@ namespace CMS.Backend.Controllers
             return View(customer);
         }
 
-        // POST: Xử lý Cập nhật (ĐÃ SỬA: Giữ lại mật khẩu cũ trong DB)
+        // POST: Xử lý Cập nhật (Giữ lại mật khẩu cũ trong DB)
         [HttpPost]
         public IActionResult Edit(Customer model)
         {
@@ -69,7 +90,7 @@ namespace CMS.Backend.Controllers
             dbCustomer.Email = model.Email;
             dbCustomer.Address = model.Address;
 
-            // Giữ nguyên mật khẩu cũ nếu model truyền lên bị trống, tránh ghi đè dữ liệu null
+            // Giữ nguyên mật khẩu cũ nếu model truyền lên bị trống
             if (!string.IsNullOrEmpty(model.Password))
             {
                 dbCustomer.Password = model.Password;

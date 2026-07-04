@@ -32,12 +32,21 @@ namespace CMS.Backend.Controllers
             ModelState.Remove("Address");
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
+            // 1. KIỂM TRA TRÙNG EMAIL
             var isEmailExist = _context.Customers.Any(c => c.Email == model.Email);
             if (isEmailExist)
             {
                 return BadRequest(new { message = "Email này đã được đăng ký! Vui lòng dùng email khác." });
             }
 
+            // 🌟 2. KIỂM TRA TRÙNG SỐ ĐIỆN THOẠI (BẢO MẬT CHUẨN DOANH NGHIỆP)
+            var isPhoneExist = _context.Customers.Any(c => c.Phone == model.Phone);
+            if (isPhoneExist)
+            {
+                return BadRequest(new { message = "Số điện thoại này đã được sử dụng! Vui lòng dùng số khác." });
+            }
+
+            // 3. NẾU HỢP LỆ THÌ TIẾN HÀNH LƯU VÀO DATABASE
             var newCustomer = new Customer
             {
                 FullName = model.Name,
