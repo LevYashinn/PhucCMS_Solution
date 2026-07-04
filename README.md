@@ -80,3 +80,60 @@ Backend/
 ├── wwwroot/              # Chứa file tĩnh được upload từ Admin (Hình ảnh)
 ├── appsettings.json      # File cấu hình Server, Database
 └── Program.cs            # Cấu hình Middleware, CORS, Services
+9. Giải pháp thuật toán nổi bật
+1. Thuật toán xử lý Giỏ hàng (CartContext)
+Phân tách User: Giỏ hàng sử dụng localStorage nhưng tên Key được gắn mã ID động (cart_user_5). Nếu chưa đăng nhập, sử dụng cart_guest. Khi User đăng xuất, hệ thống tự động tải lại context để trả về giỏ hàng trống.
+
+Kiểm soát Tồn kho (Stock Validation): Hàm addToCart được lập trình để trước khi cộng số lượng sẽ so sánh với StockQuantity từ Backend. Nếu Item in Cart + Want to Add > Stock, hệ thống hiện cảnh báo SweetAlert2 ngay lập tức và hủy lệnh thêm.
+
+2. Thuật toán Bảo mật Quên mật khẩu bằng OTP
+Không lưu OTP vào CSDL để tránh rác. Sử dụng IMemoryCache của .NET.
+
+Mã OTP 6 số được sinh ngẫu nhiên và Set thời gian sống (TTL) đúng 5 phút:
+_cache.Set($"OTP_{request.Email}", otp, TimeSpan.FromMinutes(5));
+
+Gửi Email trực tiếp cho khách qua hệ thống SmtpClient sử dụng giao thức bảo mật SSL/TLS.
+
+3. Thuật toán Phân trang (Pagination) Tối ưu hóa
+Backend (Admin): Áp dụng Server-side Pagination để không bị sập Server khi DB có hàng triệu dòng. Query Skip((page - 1) * pageSize).Take(pageSize) tạo ra câu lệnh SQL tối ưu.
+
+Frontend (Shop/Blog): Áp dụng Client-side Pagination với cú pháp .slice(indexOfFirstItem, indexOfLastItem) kết hợp "Smart Reset" (Tự động đưa về Page 1 khi đổi danh mục hoặc gõ từ khóa tìm kiếm mới).
+
+10. Xử lý sự cố thường gặp (Troubleshooting)
+Lỗi 1: Đăng nhập được nhưng gọi API lấy dữ liệu bị lỗi CORS Policy
+
+Nguyên nhân: ReactJS gọi API sang một cổng khác chưa được C# cho phép.
+
+Giải pháp: Mở file Program.cs ở Backend, kiểm tra phần cấu hình CORS xem đã có AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader() chưa.
+
+Lỗi 2: Hình ảnh sản phẩm bị "tàng hình" (Lỗi 404)
+
+Nguyên nhân: Biến IMAGE_BASE_URL cấu hình trong .env chưa đúng với cổng Backend đang chạy.
+
+Giải pháp: Mở .env, sửa lại REACT_APP_IMAGE_BASE_URL cho khớp cổng (VD: http://localhost:5226). Sau đó khởi động lại React (Ctrl+C -> npm start).
+
+Lỗi 3: Gửi mã OTP báo lỗi 500 (Lỗi Email)
+
+Nguyên nhân: Gmail App Password bị sai hoặc hết hạn.
+
+Giải pháp: Vào tài khoản Google, mục Bảo mật -> Mật khẩu ứng dụng (App Passwords) tạo mật khẩu mới 16 ký tự và thay vào biến appPassword trong AuthController.cs.
+
+11. Đóng góp & Giấy phép
+Dự án này là mã nguồn mở (Open Source). Chúng tôi hoan nghênh mọi đóng góp (Pull Request) từ cộng đồng để cải thiện tính năng:
+
+Fork dự án
+
+Tạo nhánh mới (git checkout -b feature/NewFeature)
+
+Commit thay đổi (git commit -m 'Add NewFeature')
+
+Push lên nhánh (git push origin feature/NewFeature)
+
+Mở Pull Request
+
+📝 Bản quyền (License)
+Dự án được phân phối dưới giấy phép MIT License. Bạn có quyền sử dụng, sao chép, sửa đổi, hợp nhất, xuất bản tự do.
+
+Liên hệ với tác giả:
+Email: phuc512dz@gmail.com
+GitHub: https://github.com/LevYashinn/PhucCMS_Solution
